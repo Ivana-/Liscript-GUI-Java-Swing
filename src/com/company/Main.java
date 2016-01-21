@@ -33,7 +33,7 @@ public class Main extends JFrame {
                 JFileChooser fileopen = new JFileChooser();
                 fileopen.setCurrentDirectory(new File(CurrentDir()));
                 fileopen.setFileFilter(new FileNameExtensionFilter("TXT files", "txt"));
-                int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
+                int ret = fileopen.showDialog(getParent(), "Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р» СЃРєСЂРёРїС‚Р°");
                 if (ret == JFileChooser.APPROVE_OPTION) {
                     File file = fileopen.getSelectedFile();
                     try {
@@ -332,11 +332,11 @@ public class Main extends JFrame {
     //--------------------------------- MAIN -----------------------------
 
     public static String CurrentDir(){
-        String path = System.getProperty("java.class.path");
-        String FileSeparator = (String)System.getProperty("file.separator");
-        return path.substring(0, path.lastIndexOf(FileSeparator)+1);
+        //String path = System.getProperty("java.class.path");
+        //String FileSeparator = (String)System.getProperty("file.separator");
+        //return path.substring(0, path.lastIndexOf(FileSeparator)+1);
 
-        //return "C:\\Users\\Ivana\\Java_1\\src\\com\\company\\";
+        return "C:\\Users\\Ivana\\Java_1\\src\\com\\company\\txt\\";
         //return "C:\\Users\\Ivana\\Java_1\\out\\artifacts\\Java_1_jar\\";
     }
 
@@ -354,7 +354,7 @@ public class Main extends JFrame {
                 if (pane == null) return;
                 //if (pane.thread != null) return;
 
-                //pane.out(true, "Вернуть CurrentDir() !");
+                //pane.out(true, "Р’РµСЂРЅСѓС‚СЊ CurrentDir() !");
 
                 String fileAbsolutePath = CurrentDir() + fileName + ".txt";
                 //pane.lastLoadFileNameLabel.getText();
