@@ -1,0 +1,382 @@
+(defmacro pause () (print \n "(Ctrl+Enter): ") (read) (print \n))
+
+(print "
+Набор демо-примеров (общий обзор).
+")
+
+(pause)
+
+(print "ЗАДАЧА - функция, выдающая список персон по фамилии." \n)
+(defn Person (name surname address)
+    (lambda (p)
+        (cond (eq? "getname" p) name
+              (eq? "getsurname" p) surname
+              (eq? "getinfo" p) (++ name " " surname ": " address)
+              (print "Неизвестное имя метода: " p \n))))
+(defn find-by-field (f v l) (filter (lambda (p) (eq? v (p f))) l))
+(defn show-person-list (l) (map (lambda (p) (p "getinfo")) l))
+
+(def l (map eval '(
+    (Person "Ivan" "Ivanov" "Moscow, Tverskaya 14")
+    (Person "Anton" "Smirnov" "Omsk, Dunaeva 21")
+    (Person "Andrew" "Ivanov" "Воронеж, Лизюкова 49/5")
+    )))
+(print "Исходный список:" \n (show-person-list l) \n)
+(defn test (v l)
+    (print (++ v "-s:") \n (show-person-list (find-by-field "getsurname" v l)) \n))
+(test "Ivanov" l)
+(test "Smirnov" l)
+(test "Petrov" l)
+
+(pause)
+
+(print "ЗАДАЧА - функция, вычисляющая число Фибоначчи:" \n)
+(def n 20)
+
+(defn fib (n) (cond (< n 2) n (+ (fib (- n 1)) (fib (- n 2)) )))
+(print "неоптимальным экспоненциальным алгоритмом:" \n "fib[" n "] = " (fib n) \n)
+
+(defn fib-l (n)
+    (defn go (i a b) (cond (<= i 0) a (go (- i 1) b (+ a b)) ))
+    (go n 0 1))
+(print "более оптимальным линейным алгоритмом:" \n "fib[" n "] = " (fib-l n) \n)
+
+(defn fib-e (n)
+    (defn fib-iter (a b p q count)
+      (cond (= count 0) b
+            (= 0 (mod count 2))
+                (fib-iter a b (+ (* p p) (* q q)) (+ (* q q) (* 2 p q)) (/ count 2) )
+                (fib-iter (+ (* b q) (* a q) (* a p)) (+ (* b p) (* a q)) p q (- count 1)) ))
+    (fib-iter 1 0 0 1 n))
+(print "волшебным логарифмическим алгоритмом:" \n "fib[" n "] = " (fib-e n) \n)
+
+(pause)
+
+(print "ЗАДАЧА - функция, вычисляющая квадратный корень:" \n)
+(defn sqrt (x) (
+    (defn sqrt-iter (guess) (cond (good-enough? guess) guess (sqrt-iter (improve guess)) ))
+    (defn good-enough? (guess) (< (abs (- ((lambda (x) (* x x)) guess) x)) 0.000001))
+    (defn improve (guess) (average guess (/ x guess)))
+    (defn average (x y) (/ (+ x y) 2))
+    (defn abs (x) (cond (< x 0) (- 0 x) x))
+    (sqrt-iter 1.0)))
+(def a 4)
+(print "квадратный корень из " a " равен " (sqrt a) \n)
+
+(pause)
+
+(print "ЗАДАЧА - сформировать список частичных сумм заданного списка:" \n)
+(defn foo1 (l)
+    (defn go (l s) (cond (null? l) nil (cons (+ s (car l)) (go (cdr l) (+ s (car l))))))
+    (go l 0))
+(defn foo2 (l)
+    (defn go (l s r) (cond (null? l) r (go (cdr l) (+ s (car l)) (cons (+ s (car l)) r))))
+    (reverse (go l 0 nil)))
+(defn foo3 (l)
+    (def s 0)
+    (defn f (x a) (set! s (+ s x)) (cons s a))
+    (reverse (foldl f nil l)))
+(def l '(3 2 6 5 1))
+(print "исходный список: " l \n)
+(print "результаты:" \n "1: " (foo1 l) \n "2: " (foo2 l) \n "3: " (foo3 l) \n)
+
+(pause)
+
+(print "ЗАДАЧА - умножение многочленов:" \n)
+(defn poly-mul (a b)
+    (defn winfold (l1 l2 acc)
+        (cond (null? l1) acc
+              (null? l2) acc
+              (winfold (cdr l1) (cdr l2) (+ (* (car l1) (car l2)) acc)) ))
+    (defn addzeros (n l) (cond (= 0 n) l (addzeros (- n 1) (cons 0 l)) ))
+    (def la (length a) lb (length b))
+    (def a0 (addzeros (- lb 1) a) b0 (addzeros (+ la lb -2) (reverse b)))
+    (defn go (n a b r) (cond (= 0 n) r (go (- n 1) a (cdr b) (cons (winfold a b 0) r))))
+    (go (+ la lb -1) a0 b0 nil) )
+(defn print-poly (l)
+    (print "{")
+    (defn go (l i)
+        (cond (null? l) (print "}")
+          ((print (cond (> (car l) 0) "+" ""))
+          (print (car l))
+          (cond (= i 0) ""
+                (= i 1) (print "x")
+                ((print "x^") (print i)))
+          (go (cdr l) (+ i 1))) ))
+    (go l 0))
+(def a '(0 1 2 3) b '(5 1 2 3))
+(print-poly a) (print " * ") (print-poly b) (print " = ") (print-poly (poly-mul a b))
+(print \n)
+
+(pause)
+
+(print "ЗАДАЧА - посчитать количество вхождения элементов в список:" \n)
+(defn foo (l)
+    (defn collect (x l)
+        (cond (null? l) (cons (cons x 1) nil)
+              (eq? x (car (car l))) (cons (cons x (+ 1 (car (cdr (car l))))) (cdr l))
+              (cons (car l) (collect x (cdr l))) ))
+    (foldl collect nil l))
+(def l '(h e l l o w o r l d))
+(print "входящий список: " l \n)
+(print "результат: " (foo l) \n)
+
+(pause)
+
+(print "ЗАДАЧА - исключить из первого множества элементы второго:" \n)
+(defn foo (l1 l2)
+    (def l1' (flatten l1))
+    (print "сглаженный список исходных элементов: " \n l1' \n)
+    (def l2' (flatten l2))
+    (print "сглаженный список исключаемых элементов: " \n l2' \n)
+    (filter (lambda (x) (noelem x l2')) l1'))
+(def l1 '(-10 (-9 ((-8 -7 -6)) -5 (((-4 -3))) -2 -1) 0 1 2 3 4))
+(def l2 '(5 ((((((-6 -5 -4 -3)))))) ((-8 -7 -6 -5) (((3 4 5 6 7))))))
+(print "входящие аргументы функции - списки сложной структуры:" \n l1 \n l2 \n)
+(def r (foo l1 l2))
+(print "результат: " \n r \n)
+
+(pause)
+
+(print "ЗАДАЧА - сформировать функции - производные n-го порядка исходной функции:" \n)
+(defn derivative (f) (lambda (x) (/ (- (f (+ x 0.001)) (f x) ) 0.001)))
+(defn n-der-1 (g n) (cond (> n 0) (derivative (n-der-1 g (- n 1))) g) )
+(defn n-der-2 (g n) (cond (> n 0) (n-der-2 (derivative g) (- n 1)) g) )
+(defn n-der-3 (f n)
+    (defn iter (i g) (cond (> i 0) (iter (- i 1) (derivative g)) g) )
+    (iter n f))
+(defn f (x) (* x x x x x)) (def n 3) (def x 1)
+(print "функция: " f \n)
+(print n "-я производная в точке " x " (вариант 1) = " ((n-der-1 f n) x) \n)
+(print n "-я производная в точке " x " (вариант 2) = " ((n-der-2 f n) x) \n)
+(print n "-я производная в точке " x " (вариант 3) = " ((n-der-3 f n) x) \n)
+
+(pause)
+
+(print "ЗАДАЧА - нарисовать 'елочку' заданного размера:" \n)
+(defn tree (n c)
+    (defn st (n v) (cond (< n 1) "" (++ v (st (- n 1) v))))
+    (defn go (i)
+        (def vet (st (- n i) c))
+        (cond (< i 1) \n
+              (++ \n (st i " ") vet "|" vet (go (- i 1))) ))
+    (++ \n (st n " ") "X" (go (- n 1))) )
+(print (tree 15 "@"))
+
+(pause)
+
+(print "ЗАДАЧА - создать класс 'табуретка' и дочерний класс 'стул', переопределить поле:" \n)
+(defn make-tab (h qual)
+    (def amount (cond (eq? qual low) (+ 12 (* 4 h)) (+ 14 (* 5 h)))) ;переопределяемое поле;
+    (defn dispatch (p)
+        (cond (eq? getamount p) amount
+              (eq? getprice  p) (* (cond (eq? qual low) 2 (eq? qual mid) 3 4) (dispatch getamount))
+              (eq? getinfo   p) (++ "height: " h ", quality: " qual
+                                 ", amount: " (dispatch getamount) ", price: " (dispatch getprice))
+              (eq? setamount (car p)) (set! amount (car (cdr p)))
+              (print (++ "Неизвестное имя метода:" p))))
+    dispatch)
+(defn make-chear (h hb qual)
+    ;родительский объект (с неопределенной высотой);
+    (def tab (make-tab h qual))
+    ;переопределение значения внутреннего поля;
+    (tab (cons setamount (+ (tab getamount) (* 2 hb) 5)))
+    tab)
+(print "табуретка (20, mid): " ((make-tab 20 mid) getinfo) \n)
+(print "стул (10, 2, low): " ((make-chear 10 2 low) getinfo) \n)
+
+(pause)
+
+(print "ЗАДАЧА - Дана матрица А размера 8*6." \n)
+(print "Найти элемент, котоpый встречается в массиве чаще других." \n)
+(print "Заменить элементы столбцов, в которых содержится такой элемент на этот элемент:" \n)
+
+;гистограмма - список элементов матрицы m в паре с их частотой
+;
+(defn hist (m)
+    (defn collect (x l)
+        (cond (null? l) (cons (cons x 1) nil)
+              (eq? x (car (car l))) (cons (cons x (+ 1 (car (cdr (car l))))) (cdr l))
+              (cons (car l) (collect x (cdr l)))))
+    (foldl (lambda (e a) (foldl collect a e)) nil m))
+
+;первый элемент максимального по значению второго из списка пар
+самый частый элемент гистограммы
+;
+(defn max-p (l)
+    (defn snd (p) (car (cdr p)))
+    (defn go (a l) (cond (null? l) (car a)
+                   (go (cond (> (snd (car l)) (snd a)) (car l) a) (cdr l))))
+    (go (car l) (cdr l)))
+
+;список индексов всех строк матрицы m где встречается элемент e
+;
+(defn inds-el (e m)
+    (defn add-inds-el (l a)
+        (defn go (i l)
+            (cond (null? l) a
+                  (eq? e (car l)) (cons i (go (+ i 1) (cdr l)))
+                                          (go (+ i 1) (cdr l))))
+        (go 0 l))
+    (foldl add-inds-el nil m))
+
+;замена в каждой строке матрицы m
+элементов с заданными индексами is на переданный элемент e
+;
+(defn rep-by-inds (is e m)
+    (defn rep-by-inds-in-list (l)
+        (defn go (i l) (cond (null? l) nil
+                       (cons (cond (elem i is) e (car l)) (go (+ i 1) (cdr l)))))
+        (go 0 l))
+    (map rep-by-inds-in-list m))
+
+(defn test (m)
+    (defn print-matrix (m) (map (lambda (x) (print x \n)) m))
+    (print "матрица:" \n) (print-matrix m)
+    (def hist-m (hist m)) (print "гистограмма:" \n hist-m \n)
+    (def max-fr-el (max-p hist-m))
+    (print "самый частый элемент: " max-fr-el \n)
+    (def inds-m (nub (inds-el max-fr-el m)))
+    (print "индексы столбцов, в которых встречается этот элемент:" \n inds-m \n)
+    (print "результат:" \n)
+    (print-matrix (rep-by-inds inds-m max-fr-el m)))
+
+(test '(
+(1 4 1 8 5 2)
+(0 2 1 2 8 4)
+(6 1 4 8 5 2)
+(3 2 4 5 1 3)
+(5 4 2 7 6 1)
+(2 3 1 4 234 12)
+(23 2 3 6 1 4)
+(8 3 4 2 1 2)))
+
+(pause)
+
+(print "ЗАДАЧА - на шахматной доске заданных размеров найти путь коня из стартовой клетки
+с возвращением в нее же, чтобы конь побывал во всех клетках поля:" \n)
+(defn knight (m n)
+    (defn exist-step (a b c)
+        (cond (null? c) false
+              (and (eq? a (car c)) (eq? b (cadr c))) true
+              (exist-step a b (cdr c))))
+
+    (defn next-pos (c)
+        (def p (car c))
+        (def s (filter (lambda (x) (and (<= 1 (car x) m) (<= 1 (cadr x) n)))
+            (map (lambda (x) (cons (+ (car p) (car x)) (+ (cadr p) (cadr x))))
+                 '((2 1) (1 2) (-1 2) (-2 1) (-2 -1) (-1 -2) (1 -2) (2 -1)) )))
+        (filter (lambda (x) (not (exist-step x p c))) s) )
+
+    (defn next-chains (c) (map (lambda (x) (cons x c)) (next-pos c) ))
+
+    (def field-ps (concat (map (lambda (x) (map (lambda (y) (cons x y))
+                               (list-from-to 1 n))) (list-from-to 1 m))))
+    (defn full-chain (c)
+        (and (eq? (car c) '(1 1)) (null? (filter (lambda (x) (not (elem x c))) field-ps))))
+
+    (defn go (c)
+        (def n-c (next-chains c))
+        (cond (full-chain c) (reverse c)
+              (null? n-c) nil
+              (foldl (lambda (x a) (cond (null? a) (go x) a)) nil n-c) ))
+
+    (go '((1 1)) ))
+
+(defn test (m n) (print \n "для поля " m "*" n ":" \n (knight m n) \n))
+(test 4 4) (test 4 5) (test 5 5) (test 5 6)
+
+(pause)
+
+(print "ЗАДАЧА - решение судоку, реализация поиска в глубину и в ширину:" \n)
+(def field '(
+0 0 9 3 0 1 8 0 0
+0 8 0 0 0 0 0 3 0
+2 0 0 0 7 0 0 0 9
+1 0 0 2 0 9 0 0 4
+0 0 4 0 8 0 2 0 0
+8 0 0 7 0 6 0 0 1
+9 0 0 0 1 0 0 0 5
+0 2 0 0 0 0 0 7 0
+0 0 5 6 0 2 4 0 0))
+
+(def field '(
+0 0 9 3 0 1 8 0 0
+0 0 0 0 0 0 0 3 0
+2 0 0 0 7 0 0 0 9
+1 0 0 2 0 9 0 0 4
+0 0 4 0 8 0 2 0 0
+8 0 0 7 0 6 0 0 1
+9 0 0 0 1 0 0 0 5
+0 2 0 0 0 0 0 7 0
+0 0 5 6 0 2 4 0 0))
+
+(defn showField (f)
+    (defn go (f)
+        (cond (null? f) ""
+          (++ (foldl (lambda (x a) (++ a x " ")) "" (take 9 f)) \n (go (drop 9 f))) ))
+    (cond (null? f) "Нет решений" (go f)))
+
+(print "Стартовое поле:" \n) (print (showField field))
+
+(pause)
+
+(defn steps (field)
+    (defn step-vars (i)
+        (def r (/ i 9) c (mod i 9) rs0 (* 3 (/ r 3)) cs0 (* 3 (/ c 3)))
+        (defn squ-row (n) (take 3 (drop (+ cs0 (* 9 (+ rs0 n))) field)))
+        (defn sieve-nth (l a) (cond (null? l) a (sieve-nth (drop 9 l) (cons (car l) a)) ))
+
+        (foldl (lambda (l a) (filter (lambda (x) (noelem x l)) a) )
+            '(1 2 3 4 5 6 7 8 9)
+            (cons (squ-row 0) (squ-row 1) (sieve-nth (drop c field) (squ-row 2))
+                (take 9 (drop (* 9 r) field)) nil) ))
+
+    (defn rep-by-ind (i e l)
+        (cond (null? l) nil
+              (= 0 i)   (cons e (cdr l))
+                        (cons (car l) (rep-by-ind (- i 1) e (cdr l))) ))
+
+    (defn go (i min-i min-step-counts min-step-vars f)
+        (cond (null? f)
+                  (cond (= min-step-counts 100) (cons field nil)
+                        (= min-step-counts 0)   nil
+                            ( ;(print " i = " min-i ", steps = " min-step-vars \n);
+                            (map (lambda (v) (rep-by-ind min-i v field)) min-step-vars)))
+              (= 0 (car f))
+                  ((def i-step-vars (step-vars i) i-step-counts (length i-step-vars))
+                  (cond (< i-step-counts min-step-counts)
+                      (go (+ i 1) i i-step-counts i-step-vars (cdr f))
+                      (go (+ i 1) min-i min-step-counts min-step-vars (cdr f))))
+              (go (+ i 1) min-i min-step-counts min-step-vars (cdr f)) ))
+
+    (go 0 0 100 0 field))
+
+(defn solve-depth (field)
+    (defn go (f)
+        (def vars (steps f))
+        (cond (noelem 0 f) f
+              (null? vars) nil
+              (foldl (lambda (x a) (cond (null? a) (go x) a)) nil vars) ))
+    (go field))
+
+(print "Решение поиском в глубину:" \n)
+(print (showField (solve-depth field)) \n)
+
+(defn solve-wide (field)
+    (print "Количество анализируемых вариантов: ")
+    (defn go (vars)
+        (print (++ (length vars) " "))
+        (cond (null? vars) nil
+              (noelem 0 (car vars)) vars
+              (go (concat (map steps vars))) ))
+    (go (cons field nil)))
+
+(print "Поиск в ширину (ждите, занимает некоторое время)...." \n)
+(def solunions (solve-wide field))
+(print \n "Решения поиском в ширину:" \n)
+(print (cond (null? solunions) (++ "Нет решений" \n)
+    (foldl (lambda (x a) (++ a (showField x) \n)) "" solunions) ))
+
+"
+Код данных примеров вы можете посмотреть в файле."
