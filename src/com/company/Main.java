@@ -265,7 +265,7 @@ public class Main extends JFrame {
                 pane.out(true, Eval.eval(0, true, pane, globalEnv, lv).toString());
             } catch (Throwable e) {
                 Thread.currentThread().interrupt();
-                pane.out(true, e.toString());
+                pane.out(true, e.getLocalizedMessage());
             }
 
             //pane.out("hash map not thread safe!!! need hash table!!!\n");

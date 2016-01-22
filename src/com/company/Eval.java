@@ -181,13 +181,37 @@ public class Eval {
                             op.equals("=") ? a==b : op.equals("/=") ? a!=b : true;
         }
     }
-    private static Number foldBinOp(int d, String op, InOutable io, Env env, ConsList l) {
-        if (l.isEmpty()) return (Number) null;
+    private static Number object2Number(Object o) throws RuntimeException {
+        try {
+            return (Number) o;
+        } catch (Throwable ex) {
+            if (o instanceof String)
+                throw new RuntimeException("не связанная переменная: " + o.toString());
+            else
+                throw new RuntimeException("ошибка преобразования в число: " + o.getClass().getSimpleName());
+        }
+    }
+    private static boolean object2boolean(Object o) throws RuntimeException {
+        try {
+            return (boolean) o;
+        } catch (Throwable ex) {
+            if (o instanceof String)
+                throw new RuntimeException("не связанная переменная: " + o.toString());
+            else
+                throw new RuntimeException("ошибка преобразования в булевский тип: "
+                        + o.getClass().getSimpleName());
+        }
+    }
+    private static Number foldBinOp(int d, String op, InOutable io, Env env, ConsList l)
+        throws RuntimeException {
 
-        Number r = (Number) eval(d, true, io, env, l.car);
+        if (l.isEmpty())
+            throw new RuntimeException("нет аргументов для арифметической операции: " + op);
+
+        Number r = object2Number(eval(d, true, io, env, l.car));
         l = l.cdr;
         while (!l.isEmpty()) {
-            r = BinOp(op, r, (Number) eval(d, true, io, env, l.car));
+            r = BinOp(op, r, object2Number(eval(d, true, io, env, l.car)));
             l = l.cdr;
         }
         return r;
@@ -195,10 +219,10 @@ public class Eval {
     private static boolean foldCompOp(int d, String op, InOutable io, Env env, ConsList l) {
         if (l.isEmpty()) return true;
 
-        Number a = (Number) eval(d, true, io, env, l.car);
+        Number a = object2Number(eval(d, true, io, env, l.car));
         l = l.cdr;
         while (!l.isEmpty()) {
-            Number b = (Number) eval(d, true, io, env, l.car);
+            Number b = object2Number(eval(d, true, io, env, l.car));
             if (!CompOp(op, a, b)) return false;
             a = b;
             l = l.cdr;
@@ -229,14 +253,14 @@ public class Eval {
             RawString pa = (RawString) a, pb = (RawString) b;
             return pa.string.equals(pb.string);
         } else if (a instanceof ConsList) {
-                ConsList pa = (ConsList) a, pb = (ConsList) b;
-                boolean ae = pa.isEmpty(), be = pb.isEmpty();
-                //if (ae && be) return true;
-                //else if (!ae && !be)
-                //    return isMyEqual(pa.car, pb.car) && isMyEqual(pa.cdr, pb.cdr);
-                //else return false;
-                return (ae && be) ||
-                        (!ae && !be && isMyEqual(pa.car, pb.car) && isMyEqual(pa.cdr, pb.cdr));
+            ConsList pa = (ConsList) a, pb = (ConsList) b;
+            boolean ae = pa.isEmpty(), be = pb.isEmpty();
+            //if (ae && be) return true;
+            //else if (!ae && !be)
+            //    return isMyEqual(pa.car, pb.car) && isMyEqual(pa.cdr, pb.cdr);
+            //else return false;
+            return (ae && be) ||
+                    (!ae && !be && isMyEqual(pa.car, pb.car) && isMyEqual(pa.cdr, pb.cdr));
         } else if (a instanceof Macr) {
             Macr ma = (Macr) a, mb = (Macr) b;
             return isMyEqual(ma.pars, mb.pars) && isMyEqual(ma.body, mb.body);
@@ -462,14 +486,17 @@ public class Eval {
 
                     case "cond":
                         while (!ls.isEmpty() && !ls.cdr.isEmpty()) {
-                            if ((boolean)eval(d, true, io, env, ls.car))
+                            if (object2boolean(eval(d, true, io, env, ls.car)))
                                 return ret(d, io, eval(d, strike, io, env, ls.cdr.car));
                             ls = ls.cdr.cdr;
                         }
-                        return ret(d, io, !ls.isEmpty() ? eval(d, strike, io, env, ls.car) : "");
+                        return ret(d, io,
+                                !ls.isEmpty() ?
+                                        eval(d, strike, io, env, ls.car) :
+                                        "");
 
                     case "while":
-                        while ((boolean)eval(d, true, io, env, ls.car))
+                        while (object2boolean(eval(d, true, io, env, ls.car)))
                             eval(d, true, io, env, ls.cdr);
                         return ret(d, io, rawStringOK);
 
