@@ -103,9 +103,16 @@ public class Read {
         else if (t.equals("true")) return true;
         else if (t.equals("false")) return false;
         else
+        /*
             try {return new Integer(t);}
             catch (NumberFormatException errorInteger) {
                 try {return new Double(t);}
+                catch (NumberFormatException errorDouble) {return t;}
+            }
+            */
+            try {return Integer.valueOf(t);}
+            catch (NumberFormatException errorInteger) {
+                try {return Double.valueOf(t);}
                 catch (NumberFormatException errorDouble) {return t;}
             }
     }

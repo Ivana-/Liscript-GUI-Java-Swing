@@ -4,10 +4,9 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Scanner;
 
 public class Main extends JFrame {
 
@@ -35,13 +34,13 @@ public class Main extends JFrame {
                 fileopen.setFileFilter(new FileNameExtensionFilter("TXT files", "txt"));
                 int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
                 if (ret == JFileChooser.APPROVE_OPTION) {
-                    File file = fileopen.getSelectedFile();
+                    String fileAbsolutePath = fileopen.getSelectedFile().getAbsolutePath();
                     try {
-                        String s = new Scanner(file).useDelimiter("\\Z").next();
-                        pane.lastLoadFileNameLabel.setText(file.getAbsolutePath());
+                        String s = readFileToString(fileAbsolutePath);
+                        pane.lastLoadFileNameLabel.setText(fileAbsolutePath);
                         startNewThread(pane, false, s);
                     } catch (IOException ex) {
-                        pane.out(true, "problem accessing file " + file.getAbsolutePath());
+                        pane.out(true, ex.getLocalizedMessage());
                     }
                 }
             }
@@ -65,8 +64,7 @@ public class Main extends JFrame {
 
                 String fileAbsolutePath = pane.lastLoadFileNameLabel.getText();
                 try {
-                    File file = new File(fileAbsolutePath);
-                    String s = new Scanner(file).useDelimiter("\\Z").next();
+                    String s = readFileToString(fileAbsolutePath);
                     startNewThread(pane, false, s);
                 } catch (IOException ex) {
                     pane.out(true, ex.getLocalizedMessage());
@@ -336,16 +334,33 @@ public class Main extends JFrame {
         //String FileSeparator = (String)System.getProperty("file.separator");
         //return path.substring(0, path.lastIndexOf(FileSeparator)+1);
 
-        return "C:\\Users\\Ivana\\Java_1\\src\\com\\company\\txt\\";
+        return "C:\\Users\\Ivana\\Java_1\\txt\\";
+        //return "C:\\Users\\Ivana\\Java_1\\src\\com\\company\\txt\\";
         //return "C:\\Users\\Ivana\\Java_1\\out\\artifacts\\Java_1_jar\\";
     }
 
-    public static void loadFile (String fileName) {
-        //String s = new Scanner(
-        //        new File("C:\\Users\\Ivana\\Java_1\\src\\com\\company\\" + fileName + ".txt")
-        //).useDelimiter("\\Z").next();
-        //final String fileName = fileNameIn;
+    public static String readFileToString (String fileAbsolutePath) throws IOException {
+        File file = new File(fileAbsolutePath);
+        String fileContents = "";
+        try (InputStream fileStream = new FileInputStream(file);
+             InputStream bufStream = new BufferedInputStream(fileStream);
+             Reader reader = new InputStreamReader(bufStream, StandardCharsets.UTF_8)) {
 
+            StringBuilder fileContentsBuilder = new StringBuilder();
+            char[] buffer = new char[1024];
+            int charsRead;
+            while ((charsRead = reader.read(buffer)) != -1) {
+                fileContentsBuilder.append(buffer, 0, charsRead);
+            }
+            fileContents = fileContentsBuilder.toString();
+        } catch (IOException e) {
+            //throw new RuntimeException(e.getMessage(), e);
+            throw e;
+        }
+        return fileContents;
+    }
+
+    public static void loadFile (String fileName) {
 
         Runnable doIt = new Runnable() {
             public void run() {
@@ -355,14 +370,11 @@ public class Main extends JFrame {
                 //if (pane.thread != null) return;
 
                 //pane.out(true, "Вернуть CurrentDir() !");
-
                 String fileAbsolutePath = CurrentDir() + fileName + ".txt";
-                //pane.lastLoadFileNameLabel.getText();
-
                 try {
-                    File file = new File(fileAbsolutePath);
-                    String s = new Scanner(file).useDelimiter("\\Z").next();
+                    String s = readFileToString(fileAbsolutePath);
                     startNewThread(pane, false, s);
+                    //pane.out(true, s);
                 } catch (IOException ex) {
                     pane.out(true, ex.getLocalizedMessage());
                 }
@@ -389,7 +401,7 @@ public class Main extends JFrame {
         //pane.out("Lets begin\n");
 
         WorkPanel pane = (WorkPanel) tabbedPane.getSelectedComponent();
-        pane.textAreaIn.requestFocus();
+        if (pane != null) pane.textAreaIn.requestFocus();
     }
 
     public static void main(String[] args) {
