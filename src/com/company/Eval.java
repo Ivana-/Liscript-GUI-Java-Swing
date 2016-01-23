@@ -357,7 +357,6 @@ public class Eval {
         return m;
     }
 
-    //throws Throwable { // InterruptedException {
     public static Object ret(int d, InOutable io, Object o) {
         //io.out(false, cntd(d) + Character.toString((char)8594) + " ");
         //io.out(true, o.toString());
@@ -426,8 +425,9 @@ public class Eval {
 
                     case "++":
                         String rs = "";
-                        while (!ls.isEmpty())
-                            {rs = rs + eval(d, true, io, env, ls.car).toString(); ls = ls.cdr;}
+                        while (!ls.isEmpty()) {
+                            rs = rs + eval(d, true, io, env, ls.car).toString();
+                            ls = ls.cdr;}
                         return ret(d, io, new RawString(rs));
 
                     case "eq?": return ret(d, io, foldEqObject(d, io, env, ls));
@@ -491,9 +491,7 @@ public class Eval {
                             ls = ls.cdr.cdr;
                         }
                         return ret(d, io,
-                                !ls.isEmpty() ?
-                                        eval(d, strike, io, env, ls.car) :
-                                        "");
+                                !ls.isEmpty() ? eval(d, strike, io, env, ls.car) : rawStringOK);
 
                     case "while":
                         while (object2boolean(eval(d, true, io, env, ls.car)))

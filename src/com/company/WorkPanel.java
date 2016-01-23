@@ -5,8 +5,6 @@ import com.company.Main.InterThread;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
@@ -51,29 +49,27 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         cinString = "";
 
         setActions();
+        //Font textPaneFont = new Font("Courier New", Font.PLAIN, 12);
+        Font textPaneFont = new Font("Monospaced", Font.PLAIN, 12);
 
         //--------------------------------------
 
         textArea = new JTextArea(5, 30);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setFont(new Font("Courier New", Font.PLAIN, 12));
+        textArea.setFont(textPaneFont);
         //textArea.setEditable(false);
         textArea.addCaretListener(new BracketMatcher());
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(500, 200));
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
         //--------------------------------------
 
-        Font textPaneFont = new Font("Courier New", Font.PLAIN, 12);
-        //Font textPaneFont = new Font("Monospaced", Font.PLAIN, 12)
-
-        SimpleAttributeSet textPanestyle = new SimpleAttributeSet();
-        textPanestyle.addAttribute(StyleConstants.SpaceAbove, 1.0f);
-        textPanestyle.addAttribute(StyleConstants.LeftIndent, 2.0f);
-        textPanestyle.addAttribute(StyleConstants.LineSpacing, 0.15f);
+        //SimpleAttributeSet textPanestyle = new SimpleAttributeSet();
+        //textPanestyle.addAttribute(StyleConstants.SpaceAbove, 1.0f);
+        //textPanestyle.addAttribute(StyleConstants.LeftIndent, 2.0f);
+        //textPanestyle.addAttribute(StyleConstants.LineSpacing, 0.15f);
 
         //Caret c = new DefaultCaret();
         //c.setBlinkRate(0);
@@ -83,14 +79,13 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         DefaultStyledDocument doctextAreaIn = new DefaultStyledDocument();
         textAreaIn = new JTextPane(doctextAreaIn);
         textAreaIn.setFont(textPaneFont);
-        textAreaIn.setParagraphAttributes(textPanestyle, false);
+        //textAreaIn.setParagraphAttributes(textPanestyle, false);
         //textAreaIn.setCaret(c);
         //textAreaIn.setBackground(Color.black);
         textAreaIn.addCaretListener(new BracketMatcher());
         doctextAreaIn.addDocumentListener(new SyntaxHighlighter(textAreaIn));
 
         JScrollPane scrollPaneIn = new JScrollPane(textAreaIn);
-        scrollPaneIn.setPreferredSize(new Dimension(500, 100));
         scrollPaneIn.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
         textAreaIn.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
@@ -108,14 +103,13 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         DefaultStyledDocument docEditPane = new DefaultStyledDocument();
         editPane = new JTextPane(docEditPane);
         editPane.setFont(textPaneFont);
-        editPane.setParagraphAttributes(textPanestyle, false);
+        //editPane.setParagraphAttributes(textPanestyle, false);
         //editPane.setCaret(c);
         //editPane.setBackground(Color.black);
         editPane.addCaretListener(new BracketMatcher());
         docEditPane.addDocumentListener(new SyntaxHighlighter(editPane));
 
         JScrollPane scrollEditPane = new JScrollPane(editPane);
-        scrollEditPane.setPreferredSize(new Dimension(200, 300));
         scrollEditPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         int krpiyu = KeyEvent.VK_F1;
@@ -126,15 +120,17 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
         //--------------------------------------
 
+        Rectangle wa = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+
         JSplitPane splitPaneREPL = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPaneREPL.add(scrollPane);
         splitPaneREPL.add(scrollPaneIn);
-        //splitPaneREPL.setDividerLocation(0.5);
+        splitPaneREPL.setDividerLocation(wa.height - 200);
 
         JSplitPane splitPaneAll = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPaneAll.add(splitPaneREPL);
         splitPaneAll.add(scrollEditPane);
-        //splitPaneAll.setDividerLocation(0.5);
+        splitPaneAll.setDividerLocation(wa.width - 100);
 
         this.add(splitPaneAll, BorderLayout.CENTER);
         this.add(lastLoadFileNameLabel, BorderLayout.SOUTH);
@@ -142,6 +138,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "interruptAction");
         this.getActionMap().put("interruptAction", interruptAction);
+        //this.setPreferredSize(new Dimension(wa.width, wa.height));
     }
 
     private void setActions() {

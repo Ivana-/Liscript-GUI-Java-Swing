@@ -16,6 +16,10 @@ public class Main extends JFrame {
 
     Main() {
         super("Liscript REPL v.0.1");
+        this.setIconImage(createImageIcon("images/Lambda.gif", "").getImage());
+
+        globalEnv = new Env(new HashMap<String, Object>(), null);
+
         JToolBar buttonsPanel = new JToolBar(SwingConstants.HORIZONTAL);
         JButton button;
 
@@ -30,8 +34,8 @@ public class Main extends JFrame {
                 //if (pane.isCin) return;
 
                 JFileChooser fileopen = new JFileChooser();
-                fileopen.setCurrentDirectory(new File(CurrentDir()));
-                fileopen.setFileFilter(new FileNameExtensionFilter("TXT files", "txt"));
+                fileopen.setCurrentDirectory(new File("demo\\"));
+                fileopen.setFileFilter(new FileNameExtensionFilter("liscript files", "liscript"));
                 int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
                 if (ret == JFileChooser.APPROVE_OPTION) {
                     String fileAbsolutePath = fileopen.getSelectedFile().getAbsolutePath();
@@ -329,15 +333,16 @@ public class Main extends JFrame {
 
     //--------------------------------- MAIN -----------------------------
 
-    public static String CurrentDir(){
+    //public static String DemoDir(){
         //String path = System.getProperty("java.class.path");
         //String FileSeparator = (String)System.getProperty("file.separator");
         //return path.substring(0, path.lastIndexOf(FileSeparator)+1);
 
-        return "C:\\Users\\Ivana\\Java_1\\txt\\";
+    //    return "demo\\";
+        //return "C:\\Users\\Ivana\\Java_1\\txt\\";
         //return "C:\\Users\\Ivana\\Java_1\\src\\com\\company\\txt\\";
         //return "C:\\Users\\Ivana\\Java_1\\out\\artifacts\\Java_1_jar\\";
-    }
+    //}
 
     public static String readFileToString (String fileAbsolutePath) throws IOException {
         File file = new File(fileAbsolutePath);
@@ -370,9 +375,9 @@ public class Main extends JFrame {
                 //if (pane.thread != null) return;
 
                 //pane.out(true, "Вернуть CurrentDir() !");
-                String fileAbsolutePath = CurrentDir() + fileName + ".txt";
+                //String fileAbsolutePath = CurrentDir() + fileName + ".txt";
                 try {
-                    String s = readFileToString(fileAbsolutePath);
+                    String s = readFileToString(fileName);
                     startNewThread(pane, false, s);
                     //pane.out(true, s);
                 } catch (IOException ex) {
@@ -392,11 +397,8 @@ public class Main extends JFrame {
     }
 
     private void run() {
-        globalEnv = new Env(new HashMap <String, Object> (), null);
-
-        loadFile("lib");
+        loadFile("standard_library.liscript");
         //loadFile("test");
-
         //loadFile("Demo");
         //pane.out("Lets begin\n");
 
@@ -410,7 +412,11 @@ public class Main extends JFrame {
 
         Main application = new Main();
         application.setVisible(true);
-        application.pack();
+        //application.pack();
+        Rectangle wa = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        application.setSize(wa.width, wa.height);
+        application.setResizable(true);
+        application.setExtendedState(JFrame.MAXIMIZED_BOTH);
         application.run();
     }
 }

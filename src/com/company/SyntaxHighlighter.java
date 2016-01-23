@@ -124,7 +124,6 @@ public class SyntaxHighlighter implements DocumentListener {
                             + documentEvent.getLength()).getEndOffset();
                 else
                     ito = doc.getParagraphElement(offset).getEndOffset();
-                //System.out.println("" + ifrom + " " + ito);
 
                 // set attributes in determined interval
                 int STATE_TOKEN = 0, STATE_UTIL = 1, STATE_STRING = 2, STATE_COMMENT = 3;
@@ -153,7 +152,7 @@ public class SyntaxHighlighter implements DocumentListener {
                         String word = doc.getText(ib, i - ib);
                         SimpleAttributeSet style;
                         try {
-                            Double test = new Double(word);
+                            double test = Double.parseDouble(word);
                             style = styleNumber;
                         } catch (NumberFormatException errorDouble) {
                             style = Env.isBounded(Main.globalEnv, word) ?
