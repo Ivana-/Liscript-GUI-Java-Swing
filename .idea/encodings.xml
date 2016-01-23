@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/README.md" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/com/company/BracketMatcher.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/com/company/Env.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/com/company/Eval.java" charset="UTF-8" />
@@ -8,11 +9,5 @@
     <file url="file://$PROJECT_DIR$/src/com/company/Read.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/com/company/SyntaxHighlighter.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/com/company/WorkPanel.java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/com/company/todo.txt" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/txt/01_interpreter_basics.txt" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/txt/02_liscript_basics.txt" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/txt/03_demo_samples.txt" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/txt/04_demo_streams.txt" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/txt/lib.txt" charset="UTF-8" />
   </component>
 </project>

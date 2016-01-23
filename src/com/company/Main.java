@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class Main extends JFrame {
@@ -344,7 +346,7 @@ public class Main extends JFrame {
         //return "C:\\Users\\Ivana\\Java_1\\out\\artifacts\\Java_1_jar\\";
     //}
 
-    public static String readFileToString (String fileAbsolutePath) throws IOException {
+    public static String readFileToString_ (String fileAbsolutePath) throws IOException {
         File file = new File(fileAbsolutePath);
         String fileContents = "";
         try (InputStream fileStream = new FileInputStream(file);
@@ -363,6 +365,11 @@ public class Main extends JFrame {
             throw e;
         }
         return fileContents;
+    }
+
+    public static String readFileToString (String fileAbsolutePath) throws IOException {
+        byte[] fileBytes = Files.readAllBytes(Paths.get(fileAbsolutePath));
+        return new String(fileBytes, StandardCharsets.UTF_8);
     }
 
     public static void loadFile (String fileName) {
