@@ -332,7 +332,6 @@ public class Main extends JFrame {
         pane.out(newLine, s);
     }
 
-
     //--------------------------------- MAIN -----------------------------
 
     //public static String DemoDir(){
