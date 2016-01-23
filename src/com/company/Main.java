@@ -325,7 +325,6 @@ public class Main extends JFrame {
         else SwingUtilities.invokeLater(doIt);
     }
 
-
     public static void paneout(boolean newLine, String s) {
         WorkPanel pane =
                 (WorkPanel)tabbedPane.getSelectedComponent();
