@@ -14,10 +14,6 @@ public class BracketMatcher implements CaretListener
     Highlighter.HighlightPainter goodPainter;
     Highlighter.HighlightPainter badPainter;
 
-
-    //Object word=null;
-
-
     /** Highlights using a good painter for matched parens, and a bad
      painter for unmatched parens */
     BracketMatcher(Highlighter.HighlightPainter goodHighlightPainter,
@@ -35,7 +31,7 @@ public class BracketMatcher implements CaretListener
                 new DefaultHighlighter.DefaultHighlightPainter(Color.magenta));
     }
 
-    public void clearHighlights() {
+    private void clearHighlights() {
         if(highlighter != null) {
             if(start != null) highlighter.removeHighlight(start);
             if(end   != null) highlighter.removeHighlight(end);
@@ -49,7 +45,7 @@ public class BracketMatcher implements CaretListener
     }
 
     /** Returns the character at position p in the document*/
-    public static char getCharAt(Document doc, int p)
+    private static char getCharAt(Document doc, int p)
             throws BadLocationException { return doc.getText(p, 1).charAt(0); }
 
     /** Returns the position of the matching parenthesis (bracket,
@@ -63,7 +59,7 @@ public class BracketMatcher implements CaretListener
      *
      * @return the position of the matching paren, or -1 if none is found
      **/
-    public static int findMatchingParen__(Document d, int paren)
+    private static int findMatchingParen__(Document d, int paren)
             throws BadLocationException
     {
         int parenCount = 1;
@@ -88,33 +84,7 @@ public class BracketMatcher implements CaretListener
         return i;
     }
 
-
-
-/*
-    private Action getAction(JTextComponent c, String name)
-    {
-        Action action = null;
-        Action[] actions = c.getActions();
-
-        for (int i = 0; i < actions.length; i++)
-        {
-            if (name.equals( actions[i].getValue(Action.NAME).toString() ) )
-            {
-                action = actions[i];
-                break;
-            }
-        }
-
-        return action;
-    }
-*/
-
-
-
-    //DefaultStyledDocument doc__;
-
-
-    public static int firstNonspaseOffset(Document d, int p, int dir)
+    private static int firstNonspaseOffset(Document d, int p, int dir)
             throws BadLocationException
     {
         int i = p, length = d.getLength();
@@ -125,7 +95,7 @@ public class BracketMatcher implements CaretListener
         return i >= length ? -1 : i;
     }
 
-    public static int findMatchingParen(Document d, int p, char c)
+    private static int findMatchingParen(Document d, int p, char c)
             throws BadLocationException
     {
         int dir;
@@ -152,7 +122,7 @@ public class BracketMatcher implements CaretListener
         return i >= length ? -1 : i;
     }
 
-    public boolean checkHighlightParens(Document d, int p)
+    private boolean checkHighlightParens(Document d, int p)
             throws BadLocationException
     {
         if (p < 0 || p >= d.getLength()) return false;
@@ -184,6 +154,7 @@ public class BracketMatcher implements CaretListener
     }
 
     /** Called whenever the caret moves, it updates the highlights */
+    @Override
     public void caretUpdate(CaretEvent e) {
 
         clearHighlights();

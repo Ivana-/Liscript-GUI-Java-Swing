@@ -6,32 +6,7 @@ import java.util.LinkedList;
 
 public class Read {
 
-    public static LinkedList<String> tokens_(String s) {
-        LinkedList<String> r = new LinkedList<String>();
-
-        String t = "";
-        Integer lev = 0;
-        boolean f = false;
-        for (Character c : (s + " ").toCharArray()) {
-            if (c.toString().trim().isEmpty()) {}//continue;
-            else if (c == '(' && !f) lev += 1;
-            else if (c == ')' && !f) lev -= 1;
-            else if (c == '"') f = !f;
-
-            t += c.toString();
-            if (    lev == 0 &&
-                    !t.trim().isEmpty() &&
-                    (c.toString().trim().isEmpty() || c == ')') &&
-                    !f) {
-                if (!t.trim().isEmpty()) r.add(t.trim());
-                t = "";
-                f = false;
-            }
-        }
-        return r;
-    }
-
-    public static void addToken(LinkedList<String> r, String s) {
+    private static void addToken(LinkedList<String> r, String s) {
         if(!r.isEmpty() && r.getLast().equals("\'")) {
             r.remove(r.size()-1);
             r.add("\'" + s);
@@ -87,33 +62,22 @@ public class Read {
     private static Object readToken(String t) {
         int length = t.length();
         char fst = t.charAt(0), lst = t.charAt(length - 1);
-        if (fst == '(' && lst == ')') {
-            //return tokens2ConsList(tokens(t.substring(1, length - 1)));
-
-            String subt = t.substring(1, length - 1);
-            ConsList p = tokens2ConsList(tokens(subt));
-            if (subt.contains("\n")) p.s = subt;
-            return p;
-        } else if (fst == '"' && lst == '"')
-            //return t.substring(1, length - 1);
+        if (fst == '(' && lst == ')')
+            return tokens2ConsList(tokens(t.substring(1, length - 1)));
+        else if (fst == '"' && lst == '"')
             return new Eval.RawString(t.substring(1, length - 1));
         else if (fst == '\'') {
             Object v = tokens2LispVal(tokens(t.substring(1, length)));
-            return new ConsList("quote", new ConsList(v, Eval.emptyList)); }
+            return new ConsList(Eval.SpecialForm.QUOTE, new ConsList(v, Eval.emptyList)); }
         else if (t.equals("true")) return true;
         else if (t.equals("false")) return false;
         else
-        /*
-            try {return Integer.valueOf(t);}
+            try {return Integer.parseInt(t);} //Integer.valueOf(t);
             catch (NumberFormatException errorInteger) {
-                try {return Double.valueOf(t);}
-                catch (NumberFormatException errorDouble) {return t;}
-            }
-            */
-            try {return Integer.parseInt(t);}
-            catch (NumberFormatException errorInteger) {
-                try {return Double.parseDouble(t);}
-                catch (NumberFormatException errorDouble) {return t;}
+                try {return Double.parseDouble(t);} //Double.valueOf(t);
+                catch (NumberFormatException errorDouble) {
+                    return Eval.specialFormWords.containsKey(t) ? Eval.specialFormWords.get(t) : t;
+                }
             }
     }
 
@@ -129,4 +93,33 @@ public class Read {
         if (ts.size()==1) return readToken(ts.getFirst());
         else return tokens2ConsList(ts);
     }
+
+    public static Object string2LispVal(String s) { return tokens2LispVal(tokens(s)); }
 }
+
+/*
+    public static LinkedList<String> tokens_(String s) {
+        LinkedList<String> r = new LinkedList<String>();
+
+        String t = "";
+        Integer lev = 0;
+        boolean f = false;
+        for (Character c : (s + " ").toCharArray()) {
+            if (c.toString().trim().isEmpty()) {}//continue;
+            else if (c == '(' && !f) lev += 1;
+            else if (c == ')' && !f) lev -= 1;
+            else if (c == '"') f = !f;
+
+            t += c.toString();
+            if (    lev == 0 &&
+                    !t.trim().isEmpty() &&
+                    (c.toString().trim().isEmpty() || c == ')') &&
+                    !f) {
+                if (!t.trim().isEmpty()) r.add(t.trim());
+                t = "";
+                f = false;
+            }
+        }
+        return r;
+    }
+*/

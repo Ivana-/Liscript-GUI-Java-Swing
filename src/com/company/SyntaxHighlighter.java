@@ -15,7 +15,7 @@ public class SyntaxHighlighter implements DocumentListener {
 
     static HashMap<String, SimpleAttributeSet> keyWordStyles;
     static SimpleAttributeSet styleEmpty, styleUtil, styleNumber,
-            styleString, styleStringError, styleEnvBounds, styleComment;
+            styleString, styleStringError, styleEnvBounds, styleComment, styleKeyWord;
 
     SyntaxHighlighter(JTextComponent _textComponent) {
         textComponent = _textComponent;
@@ -32,7 +32,6 @@ public class SyntaxHighlighter implements DocumentListener {
         styleStringError =  makeStyle(new Color(0, 128, 0), true, true, true);
         styleComment =      makeStyle(Color.gray, false, false, true);
         styleEnvBounds =    makeStyle(new Color(177, 177, 0), false, false, false);
-        SimpleAttributeSet styleKeyWord;
         styleKeyWord =      makeStyle(new Color(177, 177, 0), true, false, false);
         SimpleAttributeSet styleBoolean;
         styleBoolean =      makeStyle(new Color(0, 0, 128), true, false, false);
@@ -40,41 +39,6 @@ public class SyntaxHighlighter implements DocumentListener {
         keyWordStyles = new HashMap<String, SimpleAttributeSet>();
         keyWordStyles.put("true",       styleBoolean);
         keyWordStyles.put("false",      styleBoolean);
-
-        keyWordStyles.put("+",          styleEnvBounds);
-        keyWordStyles.put("-",          styleKeyWord);
-        keyWordStyles.put("*",          styleKeyWord);
-        keyWordStyles.put("/",          styleKeyWord);
-        keyWordStyles.put("mod",        styleKeyWord);
-        keyWordStyles.put(">",          styleKeyWord);
-        keyWordStyles.put(">=",         styleKeyWord);
-        keyWordStyles.put("<",          styleKeyWord);
-        keyWordStyles.put("<=",         styleKeyWord);
-        keyWordStyles.put("=",          styleKeyWord);
-        keyWordStyles.put("/=",         styleKeyWord);
-        keyWordStyles.put("++",         styleKeyWord);
-
-        keyWordStyles.put("eq?",        styleKeyWord);
-        keyWordStyles.put("def",        styleKeyWord);
-        keyWordStyles.put("set!",       styleKeyWord);
-        keyWordStyles.put("get",        styleKeyWord);
-        keyWordStyles.put("cons",       styleKeyWord);
-        keyWordStyles.put("car",        styleKeyWord);
-        keyWordStyles.put("cdr",        styleKeyWord);
-        keyWordStyles.put("quote",      styleKeyWord);
-        keyWordStyles.put("cond",       styleKeyWord);
-        keyWordStyles.put("while",      styleKeyWord);
-        keyWordStyles.put("eval",       styleKeyWord);
-        keyWordStyles.put("typeof",      styleKeyWord);
-        //keyWordStyles.put("atom?",      styleKeyWord);
-        //keyWordStyles.put("list?",      styleKeyWord);
-        //keyWordStyles.put("func?",      styleKeyWord);
-        //keyWordStyles.put("macr?",      styleKeyWord);
-        keyWordStyles.put("print",      styleKeyWord);
-        keyWordStyles.put("read",       styleKeyWord);
-        keyWordStyles.put("lambda",     styleKeyWord);
-        keyWordStyles.put("macro",      styleKeyWord);
-        //keyWordStyles.put("rec",        styleKeyWord);
     }
 
     public static SimpleAttributeSet makeStyle(
@@ -155,10 +119,9 @@ public class SyntaxHighlighter implements DocumentListener {
                             double test = Double.parseDouble(word);
                             style = styleNumber;
                         } catch (NumberFormatException errorDouble) {
-                            style = Env.isBounded(Main.globalEnv, word) ?
-                                    styleEnvBounds :
-                                    keyWordStyles.containsKey(word) ?
-                                    keyWordStyles.get(word) :
+                            style = Main.globalEnv.isBounded(word) ? styleEnvBounds :
+                                    keyWordStyles.containsKey(word) ? keyWordStyles.get(word) :
+                                    Eval.specialFormWords.containsKey(word) ? styleKeyWord :
                                     styleEmpty;
                         }
                         doc.setCharacterAttributes(ib, i - ib, style, replace);

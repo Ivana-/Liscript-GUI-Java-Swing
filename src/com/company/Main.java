@@ -8,7 +8,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
 public class Main extends JFrame {
 
@@ -20,7 +19,7 @@ public class Main extends JFrame {
         super("Liscript REPL v.0.1");
         this.setIconImage(createImageIcon("images/Lambda.gif", "").getImage());
 
-        globalEnv = new Env(new HashMap<String, Object>(), null);
+        globalEnv = new Env();
 
         JToolBar buttonsPanel = new JToolBar(SwingConstants.HORIZONTAL);
         JButton button;
@@ -265,19 +264,15 @@ public class Main extends JFrame {
                 //pane.out(true, Read.tokens_(expression).toString());
                 //pane.out(true, Read.tokens(expression).toString());
 
-                Object lv = Read.tokens2LispVal(Read.tokens(expression));
-                //if (showEcho)
-                //pane.out(true, lv.toString());
-                pane.out(true, Eval.eval(0, true, pane, globalEnv, lv).toString());
+                Object lv = Read.string2LispVal(expression);
+                    //tokens2LispVal(Read.tokens(expression));
+                //if (showEcho) pane.out(true, lv.toString());
+                pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
             } catch (Throwable e) {
                 Thread.currentThread().interrupt();
-                pane.out(true, e.getLocalizedMessage());
+                //pane.out(true, e.getLocalizedMessage());
+                pane.out(true, e.toString());
             }
-
-            //pane.out("hash map not thread safe!!! need hash table!!!\n");
-            //pane.out("icons\n");
-            //pane.out("Lisp demo\n");
-
             pane.thread = null;
             setPaneTabState(pane, 0);
         }
@@ -366,12 +361,12 @@ public class Main extends JFrame {
         return fileContents;
     }
 
-    public static String readFileToString (String fileAbsolutePath) throws IOException {
+    private static String readFileToString (String fileAbsolutePath) throws IOException {
         byte[] fileBytes = Files.readAllBytes(Paths.get(fileAbsolutePath));
         return new String(fileBytes, StandardCharsets.UTF_8);
     }
 
-    public static void loadFile (String fileName) {
+    private static void loadFile (String fileName) {
 
         Runnable doIt = new Runnable() {
             public void run() {
@@ -379,9 +374,6 @@ public class Main extends JFrame {
                         (WorkPanel)tabbedPane.getSelectedComponent();
                 if (pane == null) return;
                 //if (pane.thread != null) return;
-
-                //pane.out(true, "Вернуть CurrentDir() !");
-                //String fileAbsolutePath = CurrentDir() + fileName + ".txt";
                 try {
                     String s = readFileToString(fileName);
                     startNewThread(pane, false, s);
