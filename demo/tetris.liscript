@@ -1,0 +1,180 @@
+(print "Игра ТЕТРИС.
+Эта закладка обрабатывает поток таймера, он уже запущен (можете убедиться - заголовок закладки имеет пиктограмму в виде серого квадратика, значит поток выполняется). Для старта игры и обработки ввода пользователя переключитесь в другую закладку, введите в окне ввода команд (user-input) и подтвердите ввод Ctrl+Enter. Запустится второй поток обработки пользовательского ввода, каждый ввод надо подтверждать с помощью Ctrl+Enter.
+Команды управления (в латинской раскладке в нижнем регистре):
+    a - смещение влево
+    d - смещение вправо
+    q - поворот против часовой стрелки
+    e - поворот по часовой стрелке
+    s - падение фигуры вниз
+    p - пауза игры
+    иначе - начать/продолжить игру
+")
+
+(defmacro rnd () (java (class "java.lang.Math") "random"))
+(defmacro color (r g b) (java (class "java.awt.Color") "new" r g b))
+
+(def  item-vars (java (class "java.util.HashMap") "new"))
+
+(java item-vars "put" 0 '((0 -1) (0 0) (-1 -1) (-1 0)))
+(java item-vars "put" 1 '((0 -1) (0 0) (-1 -1) (-1 0)))
+(java item-vars "put" 2 '((0 -1) (0 0) (-1 -1) (-1 0)))
+(java item-vars "put" 3 '((0 -1) (0 0) (-1 -1) (-1 0)))
+
+(java item-vars "put" 10 '((0 -2) (0 -1) (0 0) (0 1)))
+(java item-vars "put" 11 '((1 0) (0 0) (-1 0) (-2 0)))
+(java item-vars "put" 12 '((0 -2) (0 -1) (0 0) (0 1)))
+(java item-vars "put" 13 '((1 0) (0 0) (-1 0) (-2 0)))
+
+(java item-vars "put" 20 '((-1 -1) (-1 0) (0 0) (0 1)))
+(java item-vars "put" 21 '((1 0) (0 0) (0 1) (-1 1)))
+(java item-vars "put" 22 '((-1 -1) (-1 0) (0 0) (0 1)))
+(java item-vars "put" 23 '((1 0) (0 0) (0 1) (-1 1)))
+
+(java item-vars "put" 30 '((0 -1) (0 0) (-1 0) (-1 1)))
+(java item-vars "put" 31 '((-1 0) (0 0) (0 1) (1 1)))
+(java item-vars "put" 32 '((0 -1) (0 0) (-1 0) (-1 1)))
+(java item-vars "put" 33 '((-1 0) (0 0) (0 1) (1 1)))
+
+(java item-vars "put" 40 '((0 -1) (0 0) (0 1) (-1 -1)))
+(java item-vars "put" 41 '((1 0) (0 0) (-1 0) (-1 1)))
+(java item-vars "put" 42 '((0 -1) (0 0) (0 1) (1 1)))
+(java item-vars "put" 43 '((1 0) (0 0) (-1 0) (1 -1)))
+
+(java item-vars "put" 50 '((0 -1) (0 0) (0 1) (-1 1)))
+(java item-vars "put" 51 '((1 0) (0 0) (-1 0) (1 1)))
+(java item-vars "put" 52 '((0 -1) (0 0) (0 1) (1 -1)))
+(java item-vars "put" 53 '((1 0) (0 0) (-1 0) (-1 -1)))
+
+(java item-vars "put" 60 '((0 -1) (0 0) (0 1) (-1 0)))
+(java item-vars "put" 61 '((1 0) (0 0) (-1 0) (0 1)))
+(java item-vars "put" 62 '((0 -1) (0 0) (0 1) (1 0)))
+(java item-vars "put" 63 '((1 0) (0 0) (-1 0) (0 -1)))
+
+(def BLACK (color 0 0 0))
+(def WHITE (color 255 255 255))
+
+(def  item-colors (java (class "java.util.HashMap") "new"))
+(java item-colors "put" 0 (color 240 240 0))
+(java item-colors "put" 1 (color 0 240 240))
+(java item-colors "put" 2 (color 0 240 0))
+(java item-colors "put" 3 (color 240 0 0))
+(java item-colors "put" 4 (color 240 160 0))
+(java item-colors "put" 5 (color 0 0 240))
+(java item-colors "put" 6 (color 160 0 240))
+
+(defn coords (i)
+    (match i '(t o r c))
+    (def coords-basic (java item-vars "get" (+ (* 10 t) o) ))
+    (map (lambda (p) (cons (+ r (car p)) (+ c (cadr p)))) coords-basic))
+
+(defn clear-coord (r c)
+    (java imageGraphics "clearRect"
+        (* c sq-size) (* (- rows r 1) sq-size) (- sq-size 1) (- sq-size 1)))
+
+(defn clear-item ()
+    (foldl (lambda (p a) (clear-coord (car p) (cadr p))) 0 (coords item)))
+
+(defn draw-coord (r c cur-color)
+    (java imageGraphics "setColor" cur-color)
+    (java imageGraphics "fill3DRect"
+        (* c sq-size) (* (- rows r 1) sq-size) (- sq-size 1) (- sq-size 1) true))
+
+(defn draw-item (cur-color)
+    (foldl (lambda (p a) (draw-coord (car p) (cadr p) cur-color)) 0 (coords item)))
+
+(defn draw-field ()
+    (java imageGraphics "clearRect" 0 0 image-width image-height)
+    (foldl (lambda (x a) (match x '(r c cur-color)) (draw-coord r c cur-color)) 0 field))
+
+(defn try-move (i)
+    (defn good-coord (p)
+        (def r (car p) c (cadr p))
+        (cond (< c 0) false (>= c cols) false (< r 0) false
+              (any (lambda (x) (and (= r (car x)) (= c (cadr x)) )) field) false true))
+    (cond (all good-coord (coords i)) (
+              ;(draw-item WHITE);
+              (clear-item)
+              (set! item i)
+              (draw-item (java item-colors "get" (car item)))
+              (java window "revalidate")
+              (java window "repaint")
+              true)
+          false))
+
+(defn compress-field ()
+    (defn collect (e a)
+        (def r (car e))
+        (cond (null? a) (cons (cons r 1) nil)
+              (eq? r (car (car a))) (cons (cons r (+ 1 (car (cdr (car a))))) (cdr a))
+              (cons (car a) (collect e (cdr a))) ))
+
+    (def full-rows (foldl
+        (lambda (x a) (cond (< (cadr x) cols) a (cons (car x) a) ))
+        nil (foldl collect nil field)))
+
+    (defn low-f-rs-cnt (r) (foldl (lambda (x a) (cond (< x r) (+ 1 a) a)) 0 full-rows))
+
+    (defn go (f a)
+        (def e (car f) r (car e))
+        (cond (null? f) a
+              (elem r full-rows) (go (cdr f) a)
+                  (go (cdr f) (cons (cons (- r (low-f-rs-cnt r)) (cdr e)) a)) ))
+
+    (cond (null? full-rows) false ((set! field (go field nil)) true) ))
+
+(defn user-input ()
+    (def cmd (read))
+    (match item '(t o r c))
+    (cond (eq? cmd 'a) (try-move (cons t o r (- c 1)))
+          (eq? cmd 'd) (try-move (cons t o r (+ c 1)))
+          (eq? cmd 'q) (try-move (cons t (mod (+ o 1) 4) r c))
+          (eq? cmd 'e) (try-move (cons t (mod (+ o 3) 4) r c))
+          (eq? cmd 's) (fall-down)
+          (eq? cmd 'p) (set! game-run false)
+          (set! game-run true))
+    (user-input))
+
+(defn fall-down ()
+    (match item '(t o r c))
+    (cond (try-move (cons t o (- r 1) c)) (fall-down)))
+
+(defn timer-thread ()
+    (java (class "java.lang.Thread") "sleep" 1000)
+    (match item '(t o r c))
+    (cond game-run
+        (cond (not (try-move (cons t o (- r 1) c))) (
+            (set! field (foldl
+                (lambda (p a) (cons (append p (java item-colors "get" (car item))) a))
+                field (coords item)))
+            (cond (compress-field) (draw-field))
+            (set! item (cons (java (* 7 (rnd)) "intValue") 0 (- rows 1) (/ cols 2)))
+            (cond (not (try-move item)) (set! game-run false))
+            )))
+    (timer-thread))
+
+; main program ;
+
+(def cols 10 rows 20 sq-size 30 field nil game-run false)
+(def image-width (+ 1 (* cols sq-size)) image-height (+ 1 (* rows sq-size)))
+
+(def image (java (class "java.awt.image.BufferedImage") "new" image-width image-height 1))
+(def imageGraphics (java image "createGraphics"))
+(java imageGraphics "setBackground" WHITE)
+(java imageGraphics "clearRect" 0 0 image-width image-height)
+
+(def item (cons (java (* 7 (rnd)) "intValue") 0 (- rows 1) (/ cols 2)))
+(draw-item (java item-colors "get" (car item)))
+
+(def window (java (class "javax.swing.JFrame") "new"))
+(def icon (java (class "javax.swing.ImageIcon") "new"))
+(java icon "setImage" image)
+(def label (java (class "javax.swing.JLabel") "new"))
+(java label "setIcon" icon)
+(java window "add" label)
+(java window "setVisible" true)
+(java window "setAlwaysOnTop" true)
+(java window "pack")
+
+(timer-thread)
+; call if another thread : (user-input) ;
+"Game over."

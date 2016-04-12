@@ -15,6 +15,8 @@ public class Main extends JFrame {
     private static JTabbedPane tabbedPane;
     private static Color backgroundIn;
 
+    public static Main application;
+
     Main() {
         super("Liscript REPL v.0.1");
         this.setIconImage(createImageIcon("images/Lambda.gif", "").getImage());
@@ -267,6 +269,8 @@ public class Main extends JFrame {
                 Object lv = Read.string2LispVal(expression);
                     //tokens2LispVal(Read.tokens(expression));
                 //if (showEcho) pane.out(true, lv.toString());
+
+                pane.out(false, "=> ");
                 pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
             } catch (Throwable e) {
                 Thread.currentThread().interrupt();
@@ -405,10 +409,11 @@ public class Main extends JFrame {
     }
 
     public static void main(String[] args) {
-        //try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
-        //catch (Throwable e) {}
+        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
+        catch (Throwable e) {}
 
-        Main application = new Main();
+        //Main
+        application = new Main();
         application.setVisible(true);
         //application.pack();
         Rectangle wa = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();

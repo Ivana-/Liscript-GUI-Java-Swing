@@ -71,6 +71,9 @@ public class Read {
             return new ConsList(Eval.SpecialForm.QUOTE, new ConsList(v, Eval.emptyList)); }
         else if (t.equals("true")) return true;
         else if (t.equals("false")) return false;
+
+        else if (t.equals("Main.application")) return Main.application;
+
         else
             try {return Integer.parseInt(t);} //Integer.valueOf(t);
             catch (NumberFormatException errorInteger) {

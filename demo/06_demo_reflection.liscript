@@ -1,0 +1,65 @@
+; Гроздья рябины ;
+
+(defmacro sin (x) (java (class "java.lang.Math") "sin" x))
+(defmacro cos (x) (java (class "java.lang.Math") "cos" x))
+(defmacro rnd () (java (class "java.lang.Math") "random"))
+(defmacro rand (a b) (+ a (* (- b a) (rnd))))
+(defmacro round (x) (java x "intValue"))
+(defmacro color (r g b) (java (class "java.awt.Color") "new" r g b))
+
+(def pi 3.1415926535897932384626433832)
+
+(defmacro add-image (window image)
+    (def icon (java (class "javax.swing.ImageIcon") "new"))
+    (java icon "setImage" image)
+    (def label (java (class "javax.swing.JLabel") "new"))
+    (java label "setIcon" icon)
+    (java window "add" label))
+
+(defmacro grad (x) (round (* 180 (/ x pi))))
+
+(def BLACK (color 0 0 0))
+(def WHITE (color 255 255 255))
+(def RED (color 255 0 0))
+(def GREEN (color 0 255 0))
+(def BROWN (color 150 75 0))
+
+(defn tree (graph n x y d d0 l v i)
+    (def x1 (round (+ x (* l (cos d)))) y1 (round (+ y (* l (sin d)))))
+    (def p (java (class "java.awt.Polygon") "new"))
+    (java p "addPoint" x y)
+    (java p "addPoint" x1 y1)
+    (def kl (/ l 5))
+    (def x0 (round (- x (* kl (cos d0)))) y0 (round (- y (* kl (sin d0)))))
+    (java p "addPoint" x0 y0)
+    (java graph "setColor" BROWN)
+    (java graph "fillPolygon" p)
+    (java graph "drawPolygon" p)
+    (cond (> n 0)
+             ((defmacro delta () (* v (rand (/ pi 20) (/ pi 4.5))))
+              (tree graph (- n 1) x1 y1 (- d (delta)) d (/ l 1.2) (- 0 v) i)
+              (tree graph (- n 2) x1 y1 (+ d (delta)) d (/ l 1.2) (- 0 v) i))
+             ((java graph "setColor" RED)
+              (java graph "fillOval" (- x1 10) (- y1 10) 20 20)
+              (cond (< (rnd) 0.7)
+                    ((java graph "setColor" BLACK)
+                     (java graph "fillOval" (- x1 2) (- y1 6) 4 4))) )))
+
+(def w-s 320 w-s-half (/ w-s 2))
+(defmacro chart (i)
+    (def image (java (class "java.awt.image.BufferedImage") "new" w-s w-s 1))
+    (def imageGraphics (java image "createGraphics"))
+    (java imageGraphics "setBackground" WHITE)
+    (java imageGraphics "clearRect" 0 0 w-s w-s)
+    (tree imageGraphics 9 w-s-half (- w-s 20) (- 0 (/ pi 2)) 0 50 1 i)
+    (add-image window image)
+    (+ 1 i))
+
+(def window (java (class "javax.swing.JFrame") "new"))
+(java window "setLayout" (java (class "java.awt.FlowLayout") "new"))
+(ntimes 6 chart 0)
+
+(java window "setVisible" true)
+;(java window "pack");
+(java window "setBounds" 10 10 (+ 50 (* 3 w-s)) (+ 60 (* 2 w-s)))
+"Гроздья рябины"

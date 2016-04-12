@@ -15,6 +15,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
     public JTextArea textArea;
     //public JTextPane textArea;
+    //public JEditorPane textArea;
 
     public JTextPane textAreaIn;
     public JTextPane editPane;
@@ -60,6 +61,21 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         textArea.setFont(textPaneFont);
         //textArea.setEditable(false);
         textArea.addCaretListener(new BracketMatcher());
+
+        /*
+        DefaultStyledDocument doctextArea = new DefaultStyledDocument();
+        textArea = new JTextPane(doctextArea);
+
+        //textArea.setContentType("text/html");
+
+        textArea.setFont(textPaneFont);
+        //textAreaIn.setParagraphAttributes(textPanestyle, false);
+        //textAreaIn.setCaret(c);
+        //textAreaIn.setBackground(Color.black);
+        textArea.addCaretListener(new BracketMatcher());
+        doctextArea.addDocumentListener(new SyntaxHighlighter(textArea));
+        */
+
 
         JScrollPane scrollPane = new JScrollPane(textArea);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -226,8 +242,19 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
         Runnable doIt = new Runnable() {
             public void run() {
+
                 textArea.append(s);
                 if (ln) textArea.append("\n");
+                /*
+                try {
+                    textArea.getDocument().insertString(
+                            textArea.getDocument().getLength(), s, null);
+                    if (ln) textArea.getDocument().insertString(
+                            textArea.getDocument().getLength(), "\n", null);
+
+                } catch (BadLocationException ex) {}
+                */
+
                 textArea.setCaretPosition(textArea.getDocument().getLength());
             }};
 

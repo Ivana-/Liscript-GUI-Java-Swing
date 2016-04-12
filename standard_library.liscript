@@ -6,6 +6,7 @@
 (def nil '())
 (defmacro null? (l) (eq? l nil))
 
+(defmacro symbol? (x) (eq? (typeof x) "Symbol"))
 (defmacro list? (x) (eq? (typeof x) "ConsList"))
 (defmacro func? (x) (eq? (typeof x) "Func"))
 (defmacro macr? (x) (eq? (typeof x) "Macr"))
@@ -30,6 +31,21 @@
 (defmacro cadr (l) (car (cdr l)))
 (defmacro caar (l) (car (car l)))
 (defmacro cadar (l) (cadr (car l)))
+
+(defmacro match (vals args)
+    (cond (null? vals) (null? args)
+          (symbol? (car args))
+              (cond (and (null? (cdr args)) (not (null? (cdr vals))))
+                        ((def (car args) vals) true)
+                            ((def (car args) (car vals))
+                             (match (cdr vals) (cdr args))))
+          (list? (car args))
+              (and (list? (car vals))
+                   (and (match (car vals) (car args))
+                        (match (cdr vals) (cdr args))))
+          (or (bool? (car args)) (or (string? (car args)) (number? (car args))))
+              (and (eq? (car args) (car vals)) (match (cdr vals) (cdr args)))
+          false))
 
 (defn list-from-to (a b)
     (defn go (i l) (cond (< i a) l (go (- i 1) (cons i l)) ))
@@ -89,7 +105,11 @@
               (go a (cdr l))))
     (go nil l))
 
-(defn map (f l) (cond (null? l) nil (cons (f (car l)) (map f (cdr l)))))
+;(defn map (f l) (cond (null? l) nil (cons (f (car l)) (map f (cdr l)))));
+
+(defn map (f l)
+    (defn go (l a) (cond (null? l) a (go (cdr l) (cons (f (car l)) a)) ))
+    (reverse (go l nil)))
 
 (defn nub (l) (cond (null? l) nil
     (cond (elem (car l) (cdr l)) (nub (cdr l)) (cons (car l) (nub (cdr l))) )))
@@ -123,6 +143,141 @@
         (def cars (map car ls) cdrs (map cdr ls))
         (cond (elem nil cars) nil (cons (eval (cons 'f cars)) (go cdrs))))
     (go ls))
+
+
+
+
+
+(def Math.sin (method (class "java.lang.Math") "sin" "double"))
+(def Math.cos (method (class "java.lang.Math") "cos" "double"))
+
+(def HashMap.put (method (class "java.util.HashMap") "put" "java.lang.Object" "java.lang.Object"))
+
+(def HashMap.get (method (class "java.util.HashMap") "get" "java.lang.Object"))
+
+(def HashMap.remove (method (class "java.util.HashMap") "remove" "java.lang.Object"))
+
+(def showMessageDialog (method (class "javax.swing.JOptionPane")
+            "showMessageDialog" "java.awt.Component" "java.lang.Object"))
+
+;(def action (new (class "jtools.reflect.CommandAction")));
+;
+(def fr (new (class "javax.swing.JFrame")))
+
+(java fr "setLayout" (new (class "java.awt.FlowLayout")))
+
+(def button (new (class "javax.swing.JButton")))
+(java button "setText" (java "Test" "toString"))
+
+(def text (new (class "javax.swing.JTextField")))
+
+(def dim (new (class "java.awt.Dimension"))) (java dim "setSize" 100 30)
+
+(def contentPane (java fr "getContentPane"))
+
+(def textComponent (java text "castComponent"))
+(java textComponent "setPreferredSize" dim)
+
+(java fr "add" textComponent)   (java "North" "toString"))
+
+(java fr "add" (java button "castComponent") )
+
+(def gr (class "java.awt.Graphics"))
+(java (class "java.awt.Graphics") "drawLine" 100 100 300 300)
+
+(def drawLine (method (class "java.awt.Graphics") "drawLine" "int" "int" "int" "int"))
+
+(def graphics (java contentPane "getGraphics"))
+
+(def graphics (java contentPane "getGraphics"))
+
+(drawLine graphics 10 10 300 300)
+
+(java graphics "drawLine" 10 10 300 300)
+
+(java contentPane "update" graphics)
+(java window "setBounds" 100 100 500 400)
+(java window "setLayout" (java (class "java.awt.FlowLayout") "new"))
+
+
+
+
+(defmacro v-s () (java (* window-size (java (class "java.lang.Math") "random")) "intValue"))
+(defn random-line (p)
+    (def x (v-s) y (v-s))
+    (java imageGraphics "drawLine" (car p) (cadr p) x y)
+    (cons x y))
+
+
+(defmacro show (image)
+    (def icon (java (class "javax.swing.ImageIcon") "new"))
+    (java icon "setImage" image)
+    (def label (java (class "javax.swing.JLabel") "new"))
+    (java label "setIcon" icon)
+
+    (def window (java (class "javax.swing.JFrame") "new"))
+    (java window "add" label)
+    (java window "setVisible" true)
+    (java window "pack") )
+
+(defmacro add-image (window image)
+    (def icon (java (class "javax.swing.ImageIcon") "new"))
+    (java icon "setImage" image)
+    (def label (java (class "javax.swing.JLabel") "new"))
+    (java label "setIcon" icon)
+    (java window "add" label))
+
+(defmacro sin (x) (java (class "java.lang.Math") "sin" x))
+(defmacro cos (x) (java (class "java.lang.Math") "cos" x))
+(defmacro color (r g b) (java (class "java.awt.Color") "new" r g b))
+
+(def w-s 320 w-s-half (/ w-s 2))
+(defmacro norm (x) (+ w-s-half (java (* x w-s-half) "intValue") ))
+
+(def drawString (method (class "sun.java2d.SunGraphics2D") "drawString" "java.lang.String" "int" "int"))
+
+(defmacro draw-string (ig s x y) (drawString ig (java s "toString") x y))
+
+
+(defn demo (delta a b phi color)
+    (def image (java (class "java.awt.image.BufferedImage") "new" w-s w-s 1))
+    (def imageGraphics (java image "createGraphics"))
+
+    (java imageGraphics "setBackground" (java (class "java.awt.Color") "new" 255 255 255))
+    (java imageGraphics "clearRect" 0 0 w-s w-s)
+
+    (java imageGraphics "setColor" color)
+    (java imageGraphics "setFont"
+        (java (class "java.awt.Font") "new" (java "TimesRoman" "toString") 0 10))
+    (drawString imageGraphics (java "12345" "toString") 10 10)
+
+    (defmacro p-x (alpha) (norm (sin (+ (* a alpha) phi))))
+    (defmacro p-y (alpha) (norm (cos (* b alpha))))
+
+    (defn next-line (args)
+        (match args '(alpha x0 y0))
+        (def x (p-x alpha) y (p-y alpha))
+        (java imageGraphics "drawLine" x0 (- w-s y0) x (- w-s y))
+        (cons (+ alpha delta) x y))
+
+    (ntimes 5 next-line (cons 0 (p-x 0) (p-y 0)))
+    (show image))
+
+(demo 2.5 1 1 0   (color 255 0 0))
+;
+;
+(demo 2   2 1 0   (color 0 255 0))
+(demo 2   1 2 0.3 (color 0 0 255))
+(demo 1   1 3 0.5 (color 255 255 0))
+(demo 1   3 1 0.5 (color 192 192 192))
+(demo 0.6 3 2 0.5 (color 0 0 122))
+
+(def window (java (class "javax.swing.JFrame") "new"))
+(java window "setLayout" (java (class "java.awt.FlowLayout") "new"))
+(java window "setVisible" true)
+(java window "pack")
+;
+
 
 "Стандартная библиотека успешно загружена.
 

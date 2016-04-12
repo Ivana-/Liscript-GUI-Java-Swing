@@ -83,6 +83,12 @@ public class SyntaxHighlighter implements DocumentListener {
 
                 // determine start and end offsets where needed to reset attributes
                 int ifrom = doc.getParagraphElement(offset).getStartOffset(), ito;
+
+                // toDelete
+                //ifrom = 0;
+
+
+
                 if (documentEvent.getType() == DocumentEvent.EventType.INSERT)
                     ito = doc.getParagraphElement(offset
                             + documentEvent.getLength()).getEndOffset();

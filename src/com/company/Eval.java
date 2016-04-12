@@ -1,5 +1,11 @@
 package com.company;
 
+import java.awt.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -28,9 +34,14 @@ public class Eval {
         AR_ADD, AR_SUB, AR_MUL, AR_DIV, AR_MOD,
         AR_GR, AR_GR_EQ, AR_LOW, AR_LOW_EQ, AR_EQ, AR_NOT_EQ,
         ST_CONCAT,
-        EQUAL, DEF, SET, GET, CONS, CAR, CDR, QUOTE, COND, WHILE, EVAL, TYPEOF,
-        PRINT, READ, LAMBDA, MACRO
+        EQUAL, DEF, SET, GET, CONS, CAR, CDR, QUOTE, COND, WHILE, EVAL,
+        TYPEOF, PRINT, READ, LAMBDA, MACRO
+        , BEGIN
         , TRAY
+        , CLASS
+        , NEW
+        , METHOD
+        , JAVA
     }
 
     /** словарь - список соответствий ключевых слов текста скрипта особым формам языка*/
@@ -68,7 +79,13 @@ public class Eval {
         keyWords.put("read",       SpecialForm.READ);
         keyWords.put("lambda",     SpecialForm.LAMBDA);
         keyWords.put("macro",      SpecialForm.MACRO);
+
+        keyWords.put("begin",      SpecialForm.BEGIN);
         keyWords.put("tray",       SpecialForm.TRAY);
+        keyWords.put("class",      SpecialForm.CLASS);
+        keyWords.put("new",        SpecialForm.NEW);
+        keyWords.put("method",     SpecialForm.METHOD);
+        keyWords.put("java",       SpecialForm.JAVA);
 
         return keyWords;
     }
@@ -93,6 +110,16 @@ public class Eval {
          * @return истина/ложь
          */
         public boolean isEmpty() { return this.car == null && this.cdr == null; }
+
+        /** возвращает размер списка
+         * @return размер
+         */
+        public int size() {
+            int r = 0;
+            ConsList p = this;
+            while (!p.isEmpty()) {r += 1; p = p.cdr;}
+            return r;
+        }
 
         /** @return строковое представление текущего списка */
         @Override
@@ -487,14 +514,224 @@ public class Eval {
 
     private static String cntd(int d) { return String.format("%" + 2*d + "s", " ") + d + " "; }
 
-    /** вычисляет значение переданного выражения
-     * @param ind текущий уровень вложенности рекурсивных вызовов, для трассировки
-     * @param strike строгое/ленивое вычисление применения функции к аргументам - для ТСО
-     * @param io объект, реализующий интерфейс InOutable, для ввода-вывода при вычислении
-     * @param env окружение (иерархическое), в котором производится вычисление
-     * @param inobj объект, который надо вычислить
-     * @return вычисленное значение
-     */
+    private static Class classForName(String name) throws RuntimeException {
+        switch (name) {
+            case "boolean": return boolean.class;
+            case "byte":    return byte.class;
+            case "char":    return char.class;
+            case "short":   return short.class;
+            case "int":     return int.class;
+            case "long":    return long.class;
+            case "float":   return float.class;
+            case "double":  return double.class;
+            default:
+                try {
+                    return Class.forName(name);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e.getMessage(), e);
+                }
+        }
+    }
+
+    private static HashMap<String, Method> methodsHash = new HashMap<>();
+
+    private static Constructor constructorForParams(Class c, Class[] paramTypes)
+            throws RuntimeException {
+/*
+        String keyHash = c.getName() + name + Arrays.hashCode(paramTypes);
+        //System.out.println(keyHash);
+        if (methodsHash.containsKey(keyHash)) {
+            //System.out.println("Нашли!");
+            return methodsHash.get(keyHash);
+        }
+        */
+
+        //Method[] ms = c.getDeclaredMethods();
+        Constructor[] cns = c.getConstructors();
+        ArrayList<Constructor> f1 = new ArrayList<Constructor>();
+        for(Constructor cn : cns) {
+            if (    !Modifier.isPublic(cn.getModifiers())
+                    || (!cn.isVarArgs() && paramTypes.length != cn.getParameterCount())
+                    || (paramTypes.length != cn.getParameterCount())
+                    ) continue;
+            f1.add(cn);
+        }
+        if(f1.size() == 0)
+            throw new RuntimeException("У класса " + c.getName()
+                    + " нет подходящего конструктора");
+        else if (f1.size() == 1) {
+            //methodsHash.put(keyHash, f1.get(0));
+            return f1.get(0);
+        }
+
+        //methodsHash.put(keyHash, f1.get(0));
+        //return f1.get(0);
+
+        ArrayList<Constructor> f2 = new ArrayList<Constructor>();
+        for(Constructor cn : f1) {
+            if (!Arrays.equals(cn.getParameterTypes(), paramTypes)) continue;
+            f2.add(cn);
+        }
+        if(f2.size() == 0)
+            throw new RuntimeException("У класса " + c.getName()
+                    + " конструктор не подходит по типам параметров");
+        else if (f2.size() == 1) {
+            //methodsHash.put(keyHash, f2.get(0));
+            return f2.get(0);
+        } else throw new RuntimeException("У класса " + c.getName()
+                    + " " + f2.size() + " конструктора с данными типами параметров");
+    }
+
+    private static Method methodForName(Class c, String name, Class[] paramTypes)
+            throws RuntimeException {
+
+        String keyHash = c.getName() + name + Arrays.hashCode(paramTypes);
+        //System.out.println(keyHash);
+        if (methodsHash.containsKey(keyHash)) {
+            //System.out.println("Нашли!");
+            return methodsHash.get(keyHash);
+        }
+
+        //Method[] ms = c.getDeclaredMethods();
+        Method[] ms = c.getMethods();
+        ArrayList<Method> f1 = new ArrayList<Method>();
+        for(Method m : ms) {
+            if (    !Modifier.isPublic(m.getModifiers())
+                    || !m.getName().equals(name)
+                    || (!m.isVarArgs() && paramTypes.length != m.getParameterCount())
+                    || (paramTypes.length > m.getParameterCount())
+                    ) continue;
+                f1.add(m);
+        }
+        if(f1.size() == 0)
+            throw new RuntimeException("У класса " + c.getName()
+                    + " нет подходящего метода с именем " + name);
+        else if (f1.size() == 1) {
+            methodsHash.put(keyHash, f1.get(0));
+            return f1.get(0);
+        }
+
+        methodsHash.put(keyHash, f1.get(0));
+        return f1.get(0);
+/*
+        ArrayList<Method> f2 = new ArrayList<Method>();
+        for(Method m : f1) {
+            System.out.println(name + "----------------------------");
+            System.out.println(Arrays.toString(m.getParameterTypes()));
+            System.out.println(Arrays.toString(paramTypes));
+            if (!Arrays.equals(m.getParameterTypes(), paramTypes)) continue;
+            f2.add(m);
+        }
+        if(f2.size() == 0)
+            throw new RuntimeException("У класса " + c.getName()
+                    + " метод " + name + " не подходит по типам параметров");
+        else if (f2.size() == 1) {
+            methodsHash.put(keyHash, f2.get(0));
+            return f2.get(0);
+        } else throw new RuntimeException("У класса " + c.getName()
+                    + " " + f2.size() + " метода " + name + " с данными типами параметров");
+*/
+    }
+
+    private static Class classValue(Object v) {
+        if (v instanceof Boolean)   return boolean.class;
+        if (v instanceof Byte)      return byte.class;
+        if (v instanceof Character) return char.class;
+        if (v instanceof Short)     return short.class;
+        if (v instanceof Integer)   return int.class;
+        if (v instanceof Long)      return long.class;
+        if (v instanceof Float)     return float.class;
+        if (v instanceof Double)    return double.class;
+        else return v.getClass();
+    }
+
+    private static Object invokeMethod(int d, InOutable io, Env env,
+                Class c, Object o, String name, ConsList params) {
+
+        if (name.equals("castComponent")) return (Component) o;
+        //else
+
+        int paramCnt = 0, paramsSize = params.size();
+        ConsList p = params;
+        Class[] paramTypes = new Class[paramsSize];
+        Object[] paramValues = new Object[paramsSize];
+        while (!p.isEmpty()) {
+            Object v = eval(d, true, io, env, p.car);
+            //paramTypes[paramCnt] = Class.forName(n);
+            //paramTypes[paramCnt] = classForName(n);
+            paramValues[paramCnt] = v;
+            paramTypes[paramCnt] = classValue(v); //v.getClass();
+            paramCnt += 1;
+            p = p.cdr;
+        }
+
+        if(name.equals("new")) {
+            Constructor cn = constructorForParams(c, paramTypes);
+            try {
+                Object r = null;
+                if (paramsSize == 0) {
+                    r = cn.newInstance();
+                } else if (paramsSize == 1) {
+                    r = cn.newInstance(paramValues[0]);
+                } else if (paramsSize == 2) {
+                    r = cn.newInstance(paramValues[0], paramValues[1]);
+                } else if (paramsSize == 3) {
+                    r = cn.newInstance(paramValues[0], paramValues[1], paramValues[2]);
+                } else if (paramsSize == 4) {
+                    r = cn.newInstance(paramValues[0], paramValues[1], paramValues[2], paramValues[3]);
+                } else if (paramsSize == 5) {
+                    r = cn.newInstance(paramValues[0],
+                            paramValues[1],
+                            paramValues[2],
+                            paramValues[3],
+                            paramValues[4]);
+                } else throw new RuntimeException("Конструктор " + c.getName()
+                        + " - параметров больше чем реализовано");
+                return ret(d, io, r);
+            } catch (Throwable e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
+
+        Method m = methodForName(c, name, paramTypes);
+        Object mobj = o;
+        if (Modifier.isStatic(m.getModifiers())) mobj = null;
+
+        try {
+            Object r = null;
+            if (paramsSize == 0) {
+                r = m.invoke(mobj);
+            } else if (paramsSize == 1) {
+                r = m.invoke(mobj, paramValues[0]);
+            } else if (paramsSize == 2) {
+                r = m.invoke(mobj, paramValues[0], paramValues[1]);
+            } else if (paramsSize == 3) {
+                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2]);
+            } else if (paramsSize == 4) {
+                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2], paramValues[3]);
+            } else if (paramsSize == 5) {
+                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2],
+                        paramValues[3], paramValues[4]);
+            } else if (paramsSize == 6) {
+                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2],
+                        paramValues[3], paramValues[4], paramValues[5]);
+            } else throw new RuntimeException("Метод " + name + "параметров больше чем " +
+                    "реализовано");
+            return ret(d, io, r == null ? rawStringOK : r);
+        } catch (Throwable e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+
+        /** вычисляет значение переданного выражения
+         * @param ind текущий уровень вложенности рекурсивных вызовов, для трассировки
+         * @param strike строгое/ленивое вычисление применения функции к аргументам - для ТСО
+         * @param io объект, реализующий интерфейс InOutable, для ввода-вывода при вычислении
+         * @param env окружение (иерархическое), в котором производится вычисление
+         * @param inobj объект, который надо вычислить
+         * @return вычисленное значение
+         */
     public static Object eval(int ind, boolean strike, InOutable io, Env env, Object inobj) {
 
         int d = ind + (ind < 0 ? 0 : 1);
@@ -532,11 +769,86 @@ public class Eval {
 
             ConsList ls = l.cdr;
             Object op = eval(d, ls.isEmpty() ? strike : true, io, env, l.car), v;
+            String name;
 
             if (op instanceof SpecialForm) {
                 SpecialForm sf = (SpecialForm) op;
 
                 switch (sf) {
+                    case CLASS:
+                        name = (ls.car instanceof String) ?
+                                (String)ls.car :
+                                eval(d, true, io, env, ls.car).toString();
+                        return ret(d, io, classForName(name));
+
+                    case NEW:
+                        try {
+                            Class cls = (Class) eval(d, true, io, env, ls.car);
+                            return ret(d, io, cls.newInstance());
+                            //} catch (InstantiationException e) {
+                            //    throw new RuntimeException(e.getMessage(), e);
+                            //} catch (IllegalAccessException e) {
+                            //    throw new RuntimeException(e.getMessage(), e);
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e.getMessage(), e);
+                        }
+
+                    case JAVA:
+                        v = eval(d, true, io, env, ls.car);
+                        name = (ls.cdr.car instanceof String) ?
+                                (String)ls.cdr.car :
+                                eval(d, true, io, env, ls.cdr.car).toString();
+                        if (v instanceof Class)
+                            return invokeMethod(d, io, env, (Class) v, null, name, ls.cdr.cdr);
+                        else
+                            return invokeMethod(d, io, env, v.getClass(), v, name, ls.cdr.cdr);
+
+                    case METHOD:
+                        name = (ls.cdr.car instanceof String) ?
+                                (String)ls.cdr.car :
+                                eval(d, true, io, env, ls.cdr.car).toString();
+                        try {
+                            Class cls = (Class) eval(d, true, io, env, ls.car);
+                            int paramCnt = 0;
+                            ConsList p = ls.cdr.cdr;
+                            Class[] paramTypes = new Class[p.size()];
+                            while (!p.isEmpty()) {
+                                String n = (p.car instanceof String) ?
+                                        (String)p.car :
+                                        eval(d, true, io, env, p.car).toString();
+                                //paramTypes[paramCnt] = Class.forName(n);
+                                paramTypes[paramCnt] = classForName(n);
+                                paramCnt += 1;
+                                p = p.cdr;
+                            }
+
+                            //Class[] paramTypes = new Class[2];
+                            //paramTypes[0] = Component.class; // JFrame.class;
+                            //paramTypes[1] = Object.class; //String.class;
+                            //String methodName = name;
+                            //io.out(true, name);
+                            //io.out(true, v.getClass().toString());
+                            //JOptionPane.showMessageDialog(Main.application, "test param");
+                            //Instantiate an object of type method that returns you method name
+
+                        //    Method m = v.getClass().getDeclaredMethod(methodName, paramTypes);
+                            Method m = cls.getDeclaredMethod(name, paramTypes);
+
+                            //invoke method with actual params
+                            //Object r = m.invoke(v, Main.application, mess);
+                            //return ret(d, io, r==null ? rawStringOK : r);
+                            return ret(d, io, m);
+
+                            //} catch (NoSuchMethodException e) {
+                            //    throw new RuntimeException(e.getMessage(), e);
+                            //} catch (InvocationTargetException e) {
+                            //    throw new RuntimeException(e.getMessage(), e);
+                            //} catch (IllegalAccessException e) {
+                            //   throw new RuntimeException(e.getMessage(), e);
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e.getMessage(), e);
+                        }
+
                     case AR_ADD: case AR_SUB: case AR_MUL: case AR_DIV: case AR_MOD:
                         return ret(d, io, foldBinOp(d, sf, io, env, ls));
 
@@ -554,7 +866,7 @@ public class Eval {
 
                     case DEF:
                         while (!ls.isEmpty() && !ls.cdr.isEmpty()) {
-                            String name = (ls.car instanceof String) ?
+                            name = (ls.car instanceof String) ?
                                     (String)ls.car :
                                     eval(d, true, io, env, ls.car).toString();
                             env.defVar(name, eval(d, true, io, env, ls.cdr.car));
@@ -564,7 +876,7 @@ public class Eval {
 
                     case SET:
                         while (!ls.isEmpty() && !ls.cdr.isEmpty()) {
-                            String name = (ls.car instanceof String) ?
+                            name = (ls.car instanceof String) ?
                                     (String)ls.car :
                                     eval(d, true, io, env, ls.car).toString();
                             env.setVar(name, eval(d, true, io, env, ls.cdr.car));
@@ -573,7 +885,7 @@ public class Eval {
                         return ret(d, io, rawStringOK);
 
                     case GET:
-                        String name = (ls.car instanceof String) ?
+                        name = (ls.car instanceof String) ?
                                 (String)ls.car :
                                 eval(d, true, io, env, ls.car).toString();
                         v = env.getVar(name);
@@ -622,7 +934,8 @@ public class Eval {
                         return ret(d, io, eval(d, true, io, env, eval(d, true, io, env, ls.car)));
 
                     case TYPEOF:
-                        v = ls.car;
+                        //v = ls.car;
+                        v = eval(d, true, io, env, ls.car);
                         if (v instanceof String) v = eval(d, true, io, env, ls.car);
                         switch (v.getClass().getSimpleName()) {
                             case "RawString":
@@ -653,6 +966,7 @@ public class Eval {
                     //            getEvalMapArgsVals(io, env, f.pars, ls.cdr)));
                     //    return ret(d, io, eval(d, true, io, env, ls));
 
+                    case BEGIN:
                     default:
                         v = op;
                         while (!ls.isEmpty()) {
@@ -678,6 +992,40 @@ public class Eval {
                 Object me = macroexpand(getMapArgsVals(d, io, env, f.pars, ls, false), f.body);
                 //io.out(false, me.toString());
                 return ret(d, io, eval(d, true, io, env, me));
+
+            } else if (op instanceof Method) {
+                Method m = (Method)op;
+                ConsList params;
+                if (Modifier.isStatic(m.getModifiers())) {
+                    v = null;
+                    params = ls;
+                } else {
+                    v = eval(d, true, io, env, ls.car);
+                    params = ls.cdr;
+                }
+                try {
+                    int paramSize = params.size();
+                    Object r = null;
+                    if (paramSize == 0) {
+                        r = m.invoke(v);
+                    } else if (paramSize == 1) {
+                        r = m.invoke(v, eval(d, true, io, env, params.car));
+                    } else if (paramSize == 2) {
+                        r = m.invoke(v,
+                                eval(d, true, io, env, params.car),
+                                eval(d, true, io, env, params.cdr.car)
+                        );
+                    }
+                    return ret(d, io, r == null ? rawStringOK : r);
+                    //} catch (NoSuchMethodException e) {
+                    //    throw new RuntimeException(e.getMessage(), e);
+                    //} catch (InvocationTargetException e) {
+                    //    throw new RuntimeException(e.getMessage(), e);
+                    //} catch (IllegalAccessException e) {
+                    //   throw new RuntimeException(e.getMessage(), e);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e.getMessage(), e);
+                }
 
             } else {
                 v = op;
