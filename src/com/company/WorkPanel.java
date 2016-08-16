@@ -10,18 +10,35 @@ import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class WorkPanel extends JPanel implements Eval.InOutable {
 
     public JTextArea textArea;
-    //public JTextPane textArea;
-    //public JEditorPane textArea;
-
     public JTextPane textAreaIn;
     public JTextPane editPane;
 
     public JLabel lastLoadFileNameLabel;
     //public JCheckBox cleartextAreaIn;
+
+    public static HashMap<String, Object> styleTextArea = new HashMap<>();
+    public static HashMap<String, Object> styleTextAreaIn = new HashMap<>();
+    public static HashMap<String, Object> styleEditPane = new HashMap<>();
+    public static Color textAreaIn_BackgroundIn;
+
+    public static void setDefaultStyle(HashMap<String, Object> s) {
+        HashMap<String, Object> style = new HashMap<>();
+        s.put("font", new Font("Monospaced", Font.PLAIN, 12));
+        s.put("foreground", Color.black);
+        s.put("background", Color.white);
+        s.put("caretColor", Color.black);
+    }
+    public static void setDefaultSettings() {
+        setDefaultStyle(styleTextArea);
+        setDefaultStyle(styleTextAreaIn);
+        setDefaultStyle(styleEditPane);
+        textAreaIn_BackgroundIn = new Color(255, 237, 197);
+    }
 
     public InterThread thread = null;
     public volatile boolean isCin = false;
@@ -51,14 +68,14 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
         setActions();
         //Font textPaneFont = new Font("Courier New", Font.PLAIN, 12);
-        Font textPaneFont = new Font("Monospaced", Font.PLAIN, 12);
+        //Font textPaneFont = new Font("Monospaced", Font.PLAIN, 12);
 
         //--------------------------------------
 
         textArea = new JTextArea(5, 30);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setFont(textPaneFont);
+        //textArea.setFont(textPaneFont);
         //textArea.setEditable(false);
         textArea.addCaretListener(new BracketMatcher());
 
@@ -94,7 +111,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         //final DefaultStyledDocument doctextAreaIn = new DefaultStyledDocument(sctextAreaIn);
         DefaultStyledDocument doctextAreaIn = new DefaultStyledDocument();
         textAreaIn = new JTextPane(doctextAreaIn);
-        textAreaIn.setFont(textPaneFont);
+        //textAreaIn.setFont(textPaneFont);
         //textAreaIn.setParagraphAttributes(textPanestyle, false);
         //textAreaIn.setCaret(c);
         //textAreaIn.setBackground(Color.black);
@@ -118,7 +135,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
         DefaultStyledDocument docEditPane = new DefaultStyledDocument();
         editPane = new JTextPane(docEditPane);
-        editPane.setFont(textPaneFont);
+        //editPane.setFont(textPaneFont);
         //editPane.setParagraphAttributes(textPanestyle, false);
         //editPane.setCaret(c);
         //editPane.setBackground(Color.black);
@@ -155,6 +172,8 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "interruptAction");
         this.getActionMap().put("interruptAction", interruptAction);
         //this.setPreferredSize(new Dimension(wa.width, wa.height));
+
+        applySettings();
     }
 
     private void setActions() {
@@ -234,6 +253,32 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
                 out(true, thread.getName());
             }
         };
+    }
+
+    public void applySettings() {
+
+        textArea.setFont((Font) styleTextArea.get("font"));
+        textArea.setForeground((Color) styleTextArea.get("foreground"));
+        textArea.setBackground((Color) styleTextArea.get("background"));
+        textArea.setCaretColor((Color) styleTextArea.get("caretColor"));
+
+        textAreaIn.setFont((Font) styleTextAreaIn.get("font"));
+        textAreaIn.setForeground((Color) styleTextAreaIn.get("foreground"));
+        textAreaIn.setBackground((Color) styleTextAreaIn.get("background"));
+        textAreaIn.setCaretColor((Color) styleTextArea.get("caretColor"));
+
+        editPane.setFont((Font) styleEditPane.get("font"));
+        editPane.setForeground((Color) styleEditPane.get("foreground"));
+        editPane.setBackground((Color) styleEditPane.get("background"));
+        editPane.setCaretColor((Color) styleTextArea.get("caretColor"));
+
+        String s = textAreaIn.getText();
+        textAreaIn.selectAll();
+        textAreaIn.replaceSelection(s);
+
+        s = editPane.getText();
+        editPane.selectAll();
+        editPane.replaceSelection(s);
     }
 
     @Override

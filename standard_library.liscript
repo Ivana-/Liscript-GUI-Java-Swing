@@ -55,7 +55,11 @@
 (defn length (l)
     (defn go (l i) (cond (null? l) i (go (cdr l) (+ 1 i)) ))
     (go l 0))
-(defn append (l1 l2) (cond (null? l1) l2 (cons (car l1) (append (cdr l1) l2))))
+
+;(defn append (l1 l2) (cond (null? l1) l2 (cons (car l1) (append (cdr l1) l2))));
+(defn append (l1 l2)
+    (defn go (l1 l2) (cond (null? l1) l2 (go (cdr l1) (cons (car l1) l2))) )
+    (go (reverse l1) l2) )
 
 (defn take (n l)
     (cond (null? l) nil
@@ -106,7 +110,6 @@
     (go nil l))
 
 ;(defn map (f l) (cond (null? l) nil (cons (f (car l)) (map f (cdr l)))));
-
 (defn map (f l)
     (defn go (l a) (cond (null? l) a (go (cdr l) (cons (f (car l)) a)) ))
     (reverse (go l nil)))
@@ -128,14 +131,14 @@
 
 (defn not (x)   (cond x false true))
 (defn and (x y) (cond x y false))
-(defn or  (x y) (cond x true y true false))
+;(defn or  (x y) (cond x true y true false));
+(defn or  (x y) (cond x true y))
+(defn xor (x y) (cond (eq? x y) false true))
 
 (defn flatten (l)
-    (defn go (r l)
-        (cond (atom? l) l
-              (null? l) nil
-              (append (tolist (go r (car l))) (tolist (go r (cdr l))))))
-    (go nil l))
+    (cond (atom? l) l
+          (null? l) nil
+          (append (tolist (flatten (car l))) (tolist (flatten (cdr l)))) ))
 
 (defn mapcar (args)
     (def f (car args) ls (cdr args))
@@ -143,6 +146,27 @@
         (def cars (map car ls) cdrs (map cdr ls))
         (cond (elem nil cars) nil (cons (eval (cons 'f cars)) (go cdrs))))
     (go ls))
+
+
+
+; Функции и макросы работы с графикой ;
+
+
+(defn new-window (layout)
+    (def window (java (class "javax.swing.JFrame") "new"))
+    (java window "setLayout" (java (class (++ "java.awt." layout)) "new"))
+    window)
+
+(defmacro add-image (window image)
+    (def icon (java (class "javax.swing.ImageIcon") "new"))
+    (java icon "setImage" image)
+    (def label (java (class "javax.swing.JLabel") "new"))
+    (java label "setIcon" icon)
+    (java window "add" label))
+
+(defmacro new-image (width height) (java (class "java.awt.image.BufferedImage") "new" width height 1))
+
+(defmacro new-imageGraphics (image) (java image "createGraphics"))
 
 
 
@@ -287,4 +311,8 @@
 02_liscript_basics.liscript - описание языка
 или прочие демо-файлы
 
-Когда надоест эта длинная надпись - измените ее в конце файла библиотеки standard_library.liscript в папке рядом с исполняемым файлом."
+Когда надоест эта длинная надпись - измените ее в конце файла библиотеки standard_library.liscript в папке рядом с исполняемым файлом.
+
+ТУДУ:
+1) оставить только 2 особые формы - class и java, убрать new, method и т.п.
+2) сделать строки нормальными строками, а символы - спецтипом оберткой"

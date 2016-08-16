@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,21 +13,21 @@ import java.nio.file.Paths;
 public class Main extends JFrame {
 
     public static Env globalEnv;
-    private static JTabbedPane tabbedPane;
-    private static Color backgroundIn;
-
+    public static JTabbedPane tabbedPane;
     public static Main application;
 
     Main() {
         super("Liscript REPL v.0.1");
         this.setIconImage(createImageIcon("images/Lambda.gif", "").getImage());
 
+        WorkPanel.setDefaultSettings();
+        SyntaxHighlighter.setDefaultSettings();
+        SettingsDialog.readSettingFromFile("settings.xml");
+
         globalEnv = new Env();
 
         JToolBar buttonsPanel = new JToolBar(SwingConstants.HORIZONTAL);
         JButton button;
-
-        backgroundIn = new Color(255, 237, 197);
 
         Action loadFileAction = new AbstractAction() {
             @Override
@@ -95,6 +96,22 @@ public class Main extends JFrame {
         //button.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
         button.setToolTipText("add new tab");
         button.setIcon(createImageIcon("images/Create.png", button.getToolTipText()));
+        buttonsPanel.add(button);
+
+        //Action showSettingsDialogAction = new AbstractAction() {
+        ActionListener showSettingsDialogAction = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SettingsDialog sd = new SettingsDialog(null);
+                sd.setLocationRelativeTo(null);
+                sd.showDialog();
+            }
+        };
+        button = new JButton();
+        //button.setAction(showSettingsDialogAction);
+        button.addActionListener(showSettingsDialogAction);
+        button.setToolTipText("settings");
+        button.setIcon(createImageIcon("images/Settings.png", button.getToolTipText()));
         buttonsPanel.add(button);
         buttonsPanel.addSeparator();
 
@@ -301,17 +318,19 @@ public class Main extends JFrame {
                         if (state == 0) {
                             label.setOpaque(false);
                             label.setBackground(Color.white);
-                            pane.textAreaIn.setBackground(Color.white);
+                            pane.textAreaIn.setBackground(
+                                    (Color) WorkPanel.styleTextAreaIn.get("background"));
                         } else {
                             label.setOpaque(true);
 
                             if (state == 2) {
                                 label.setBackground(Color.yellow);
-                                pane.textAreaIn.setBackground(backgroundIn);
+                                pane.textAreaIn.setBackground(WorkPanel.textAreaIn_BackgroundIn);
                                 pane.textAreaIn.requestFocus();
                             } else {
                                 label.setBackground(Color.gray);
-                                pane.textAreaIn.setBackground(Color.white);
+                                pane.textAreaIn.setBackground(
+                                        (Color) WorkPanel.styleTextAreaIn.get("background"));
                             }
                         }
                     }

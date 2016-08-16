@@ -5,51 +5,55 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
-import java.util.HashMap;
+import java.util.HashSet;
 
 public class SyntaxHighlighter implements DocumentListener {
 
     boolean beenModified = false;
     DocumentEvent documentEvent;
     JTextComponent textComponent;
+    //SimpleAttributeSet styleEmpty;
 
-    static HashMap<String, SimpleAttributeSet> keyWordStyles;
-    static SimpleAttributeSet styleEmpty, styleUtil, styleNumber,
-            styleString, styleStringError, styleEnvBounds, styleComment, styleKeyWord;
+    //static HashMap<String, SimpleAttributeSet> keyWordStyles;
+    static HashSet<String> booleanKeyWords = new HashSet<String>();
+    static SimpleAttributeSet styleUtil = new SimpleAttributeSet();
+    static SimpleAttributeSet styleNumber = new SimpleAttributeSet();
+    static SimpleAttributeSet styleBoolean = new SimpleAttributeSet();
+    static SimpleAttributeSet styleString = new SimpleAttributeSet();
+    static SimpleAttributeSet styleStringError = new SimpleAttributeSet();
+    static SimpleAttributeSet styleComment = new SimpleAttributeSet();
+    static SimpleAttributeSet styleEnvBounds = new SimpleAttributeSet();
+    static SimpleAttributeSet styleKeyWord = new SimpleAttributeSet();
 
-    SyntaxHighlighter(JTextComponent _textComponent) {
-        textComponent = _textComponent;
+    SyntaxHighlighter(JTextComponent _textComponent) {textComponent = _textComponent;}
 
-        //styleEmpty =        makeStyle(new Color(109, 163, 189), false, false, false);
-        if (textComponent.getBackground().equals(Color.black))
-            styleEmpty =        makeStyle(Color.lightGray, false, false, false);
-        else
-            styleEmpty =        makeStyle(Color.black, false, false, false);
-
-        styleUtil =         makeStyle(new Color(102, 204, 102), false, false, false);
-        styleNumber =       makeStyle(Color.magenta, false, false, false);
-        styleString =       makeStyle(new Color(0, 128, 0), true, false, false);
-        styleStringError =  makeStyle(new Color(0, 128, 0), true, true, true);
-        styleComment =      makeStyle(Color.gray, false, false, true);
-        styleEnvBounds =    makeStyle(new Color(177, 177, 0), false, false, false);
-        styleKeyWord =      makeStyle(new Color(177, 177, 0), true, false, false);
-        SimpleAttributeSet styleBoolean;
-        styleBoolean =      makeStyle(new Color(0, 0, 128), true, false, false);
-
-        keyWordStyles = new HashMap<String, SimpleAttributeSet>();
-        keyWordStyles.put("true",       styleBoolean);
-        keyWordStyles.put("false",      styleBoolean);
-    }
-
-    public static SimpleAttributeSet makeStyle(
-        Color foreground, boolean bold, boolean underline, boolean italic) {
-
-        SimpleAttributeSet style = new SimpleAttributeSet();
+    public static void makeStyle(SimpleAttributeSet style,
+            Color foreground, boolean bold, boolean underline, boolean italic) {
         style.addAttribute(StyleConstants.Foreground, foreground);
         style.addAttribute(StyleConstants.Bold, bold);
         style.addAttribute(StyleConstants.Underline, underline);
         style.addAttribute(StyleConstants.Italic, italic);
-        return style;
+    }
+
+    public static void setDefaultSettings() {
+        //makeStyle(styleEmpty, textComponent.getForeground(), false, false, false);
+        makeStyle(styleUtil, new Color(102, 204, 102), false, false, false);
+        makeStyle(styleNumber, Color.magenta, false, false, false);
+        makeStyle(styleBoolean, new Color(0, 150, 150), true, false, false);
+        makeStyle(styleString, new Color(0, 150, 0), true, false, false);
+        makeStyle(styleStringError, new Color(0, 150, 0), true, true, true);
+        makeStyle(styleComment, Color.gray, false, false, true);
+        makeStyle(styleEnvBounds, new Color(177, 177, 0), false, false, false);
+        makeStyle(styleKeyWord, new Color(177, 177, 0), true, false, false);
+
+        //SimpleAttributeSet styleBoolean;
+        //styleBoolean =      makeStyle(new Color(0, 150, 150), true, false, false);
+        //keyWordStyles = new HashMap<String, SimpleAttributeSet>();
+        //keyWordStyles.put("true",       styleBoolean);
+        //keyWordStyles.put("false",      styleBoolean);
+
+        booleanKeyWords.add("true");
+        booleanKeyWords.add("false");
     }
 
     public void insertUpdate(DocumentEvent e) {highlightText(e);}
@@ -68,6 +72,8 @@ public class SyntaxHighlighter implements DocumentListener {
             DefaultStyledDocument doc = (DefaultStyledDocument) documentEvent.getDocument();
             try {
                 int offset = documentEvent.getOffset();
+                SimpleAttributeSet styleEmpty = new SimpleAttributeSet();
+                makeStyle(styleEmpty, textComponent.getForeground(), false, false, false);
 
                 // add close paren ) or "
                 /*
@@ -126,7 +132,8 @@ public class SyntaxHighlighter implements DocumentListener {
                             style = styleNumber;
                         } catch (NumberFormatException errorDouble) {
                             style = Main.globalEnv.isBounded(word) ? styleEnvBounds :
-                                    keyWordStyles.containsKey(word) ? keyWordStyles.get(word) :
+                                    //keyWordStyles.containsKey(word) ? keyWordStyles.get(word) :
+                                    booleanKeyWords.contains(word) ? styleBoolean :
                                     Eval.specialFormWords.containsKey(word) ? styleKeyWord :
                                     styleEmpty;
                         }
@@ -152,9 +159,36 @@ public class SyntaxHighlighter implements DocumentListener {
         SwingUtilities.invokeLater(doRunnableHighlight);
     }
 }
+/*
+    public void game() {
 
+        if (newGame) {
+            resources.free();
+        }
 
+        s = FILENAME + 3;
+        setLocation();
+        load(s);
+        loadDialog.process();
 
+        try {
+            setGamerColor(RED);
+        } catch (Exception e) {
+            reset();
+        }
+
+        while (notReady) {
+            objects.make();
+            if (resourceNotFound) {
+                break;
+            }
+        }
+
+        byte result; // сменить на int!
+        music();
+        System.out.print("");
+    }
+*/
     /*
     if (!beenModified) {
         beenModified = true;

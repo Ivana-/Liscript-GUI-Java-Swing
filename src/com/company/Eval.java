@@ -472,14 +472,13 @@ public class Eval {
         } else return o;
     }
 
-    private static class TailCall {
+    private static class FuncCall {
         public Func f;
         public HashMap<String, Object> args;
 
-        TailCall(Func _f, HashMap<String, Object> _args) { f = _f; args = _args; }
+        FuncCall(Func _f, HashMap<String, Object> _args) { f = _f; args = _args; }
 
         @Override
-        //public String toString() { return "FUNCALL: " + f.toString() + " " + args.toString(); }
         public String toString() { return "FUNCALL: " + args.toString(); }
     }
 
@@ -725,16 +724,16 @@ public class Eval {
 
 
         /** вычисляет значение переданного выражения
-         * @param ind текущий уровень вложенности рекурсивных вызовов, для трассировки
-         * @param strike строгое/ленивое вычисление применения функции к аргументам - для ТСО
+         * @param sl текущий уровень вложенности рекурсивных вызовов, для трассировки
+         * @param strict строгое/ленивое вычисление применения функции к аргументам - для ТСО
          * @param io объект, реализующий интерфейс InOutable, для ввода-вывода при вычислении
          * @param env окружение (иерархическое), в котором производится вычисление
          * @param inobj объект, который надо вычислить
          * @return вычисленное значение
          */
-    public static Object eval(int ind, boolean strike, InOutable io, Env env, Object inobj) {
+    public static Object eval(int sl, boolean strict, InOutable io, Env env, Object inobj) {
 
-        int d = ind + (ind < 0 ? 0 : 1);
+        int d = sl + (sl < 0 ? 0 : 1);
         //tray(d, io, inobj);
 
         if (Thread.currentThread().isInterrupted()) {
@@ -768,7 +767,7 @@ public class Eval {
             if (l.isEmpty()) return ret(d, io, l);
 
             ConsList ls = l.cdr;
-            Object op = eval(d, ls.isEmpty() ? strike : true, io, env, l.car), v;
+            Object op = eval(d, ls.isEmpty() ? strict : true, io, env, l.car), v;
             String name;
 
             if (op instanceof SpecialForm) {
@@ -914,16 +913,16 @@ public class Eval {
 
                     case QUOTE: return ret(d, io, ls.car);
 
-                    case TRAY: return ret(d, io, eval(0, strike, io, env, getbody(ls)));
+                    case TRAY: return ret(d, io, eval(0, strict, io, env, getbody(ls)));
 
                     case COND:
                         while (!ls.isEmpty() && !ls.cdr.isEmpty()) {
                             if (object2boolean(eval(d, true, io, env, ls.car)))
-                                return ret(d, io, eval(d, strike, io, env, ls.cdr.car));
+                                return ret(d, io, eval(d, strict, io, env, ls.cdr.car));
                             ls = ls.cdr.cdr;
                         }
                         return ret(d, io,
-                                !ls.isEmpty() ? eval(d, strike, io, env, ls.car) : rawStringOK);
+                                !ls.isEmpty() ? eval(d, strict, io, env, ls.car) : rawStringOK);
 
                     case WHILE:
                         while (object2boolean(eval(d, true, io, env, ls.car)))
@@ -962,7 +961,7 @@ public class Eval {
 
                     //case "rec":
                     //    Func f = (Func) eval(d, true, io, env, ls.car);
-                    //    return ret(d, io, new TailCall(f,
+                    //    return ret(d, io, new FuncCall(f,
                     //            getEvalMapArgsVals(io, env, f.pars, ls.cdr)));
                     //    return ret(d, io, eval(d, true, io, env, ls));
 
@@ -970,22 +969,29 @@ public class Eval {
                     default:
                         v = op;
                         while (!ls.isEmpty()) {
-                            v = eval(d, ls.cdr.isEmpty() ? strike : true, io, env, ls.car);
+                            v = eval(d, ls.cdr.isEmpty() ? strict : true, io, env, ls.car);
                             ls = ls.cdr; }
                         return ret(d, io, v);
                 }
 
             } else if (op instanceof Func) {
                 Func f = (Func)op;
-                TailCall tcall = new TailCall(f, getMapArgsVals(d, io, env, f.pars, ls, true));
-                if (strike) {
-                    v = tcall;
-                    while (v instanceof TailCall) {
-                        TailCall tc = (TailCall) v;
-                        v = eval(d, false, io, new Env(tc.args, tc.f.clojure), tc.f.body);
+                FuncCall fcall = new FuncCall(f, getMapArgsVals(d, io, env, f.pars, ls, true));
+                if (strict) {
+                    v = fcall;
+                    while (v instanceof FuncCall) {
+                        FuncCall fc = (FuncCall) v;
+                        v = eval(d, false, io, new Env(fc.args, fc.f.clojure), fc.f.body);
                     }
                     return ret(d, io, v);
-                } else return ret(d, io, tcall);
+                } else return ret(d, io, fcall);
+
+                /*
+                v = eval(d, false, io,
+                        new Env(getMapArgsVals(d, io, env, f.pars, ls, true), f.clojure), f.body);
+                return ret(d, io, v);
+                */
+
 
             } else if (op instanceof Macr) {
                 Macr f = (Macr)op;
@@ -1030,19 +1036,19 @@ public class Eval {
             } else {
                 v = op;
                 while (!ls.isEmpty()) {
-                    v = eval(d, ls.cdr.isEmpty() ? strike : true, io, env, ls.car);
+                    v = eval(d, ls.cdr.isEmpty() ? strict : true, io, env, ls.car);
                     ls = ls.cdr; }
                 return ret(d, io, v);
             }
 
-        } else if (inobj instanceof TailCall) {
+        } else if (inobj instanceof FuncCall) {
 
             tray(d, io, inobj);
 
             Object v = inobj;
-            while (v instanceof TailCall) {
-                TailCall tc = (TailCall) v;
-                v = eval(d, false, io, new Env(tc.args, tc.f.clojure), tc.f.body);
+            while (v instanceof FuncCall) {
+                FuncCall fc = (FuncCall) v;
+                v = eval(d, false, io, new Env(fc.args, fc.f.clojure), fc.f.body);
             }
             return ret(d, io, v);
 
