@@ -6,6 +6,8 @@
 (def nil '())
 (defmacro null? (l) (eq? l nil))
 
+(defmacro while (condition body) cond condition (0 body (while condition body)))
+
 (defmacro symbol? (x) (eq? (typeof x) "Symbol"))
 (defmacro list? (x) (eq? (typeof x) "ConsList"))
 (defmacro func? (x) (eq? (typeof x) "Func"))
@@ -29,6 +31,7 @@
 ")
 
 (defmacro cadr (l) (car (cdr l)))
+(defmacro cddr (l) (cdr (cdr l)))
 (defmacro caar (l) (car (car l)))
 (defmacro cadar (l) (cadr (car l)))
 
@@ -311,8 +314,4 @@
 02_liscript_basics.liscript - описание языка
 или прочие демо-файлы
 
-Когда надоест эта длинная надпись - измените ее в конце файла библиотеки standard_library.liscript в папке рядом с исполняемым файлом.
-
-ТУДУ:
-1) оставить только 2 особые формы - class и java, убрать new, method и т.п.
-2) сделать строки нормальными строками, а символы - спецтипом оберткой"
+Когда надоест эта длинная надпись - измените ее в конце файла библиотеки standard_library.liscript в папке рядом с исполняемым файлом."

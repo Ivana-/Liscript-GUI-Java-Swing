@@ -1,6 +1,51 @@
-; прыгающие шарики, анимация. Задаем ширину/высоту окна, количество и радиус шариков ;
-(defn bouncing-balls (w-width w-height n-balls r-ball)
-    (def d-ball (* 2 r-ball)) ; диаметр шарика ;
+; Прыгающие шарики, анимация. ;
+; Задаем ширину / высоту окна, количество и максимальный радиус шариков ;
+(defn bouncing-balls (w-width w-height n-balls r-ball-max)
+
+    ; макросы, которым место в стандартной библиотеке ;
+    (defmacro rnd () java (class "java.lang.Math") "random")
+    (defmacro round (x) java x "intValue")
+
+    ; смещает координату / скорость шарика по одной оси ;
+    (defn move-dir (ball ind-x ind-dx x-max)
+        (def x (java ball "get" ind-x)
+            dx (java ball "get" ind-dx)
+             r (java ball "get" 5)
+             x-new (+ x dx) m (- x-max r))
+        (java ball "put" ind-x  (cond (< x-new r) r (> x-new m) m x-new))
+        (java ball "put" ind-dx (cond (<= r x-new m) dx (- 0 dx))) )
+
+    ; смещает и отрисовывает шарик ;
+    (defn move-draw (ball)
+        (move-dir ball 0 1 w-width)
+        (move-dir ball 2 3 w-height)
+        (def x (java ball "get" 0)
+             y (java ball "get" 2)
+             r (java ball "get" 5) d (* 2 r))
+        (java img-gr "setColor" (java ball "get" 4))
+        (java img-gr "fillOval" (- (round x) r) (- (round y) r) d d) )
+
+    ; добавляет уникальный шарик со своими координатами, скоростью и цветом;
+    (defn add-new-ball ()
+        (defn rnd-dx () (def v (+ (* v-max (rnd)) 1)) (cond (< (rnd) 0.5) v (- 0 v)) )
+        (defn rnd-rgb () (round (* 200 (rnd)) ))
+        (def color (java (class "java.awt.Color") "new" (rnd-rgb) (rnd-rgb) (rnd-rgb)))
+        (def ball (java (class "java.util.HashMap") "new"))
+        (java ball "put" 0 (/ w-width 2))
+        (java ball "put" 1 (rnd-dx))
+        (java ball "put" 2 (/ w-height 2))
+        (java ball "put" 3 (rnd-dx))
+        (java ball "put" 4 color)
+        (java ball "put" 5 (+ (round (* (- r-ball-max 5) (rnd))) 5))
+        (java balls "put" (+ (java balls "size") 1) ball))
+
+    ; анимация - очистка экрана, смещение и отрисовка шариков, обновление окна, пауза ;
+    (defn go () while true
+        (java img-gr "clearRect" 0 0 w-width w-height)
+        (def n n-balls)
+        (while (> n 0) (move-draw (java balls "get" n)) (set! n (- n 1)))
+        (java window "repaint")
+        (java (class "java.lang.Thread") "sleep" 50))
 
     ; параметры окна и графики, вызываются макросы стандартной библиотеки ;
     (def image (new-image w-width w-height))
@@ -14,44 +59,9 @@
     (java window "setTitle" (java "Bouncing balls" "toString"))
     (java window "pack")
 
-    ; макросы, которым место в стандартной библиотеке ;
-    (defmacro rnd () (java (class "java.lang.Math") "random"))
-    (defmacro round (x) (java x "intValue"))
+    (def balls (java (class "java.util.HashMap") "new"))
+    (def v-max 7 n n-balls)
+    (while (> n 0) (add-new-ball) (set! n (- n 1)))
+    (go))
 
-    ; смещение координат шарика по одной оси, возвращает новые координату/скорость ;
-    (defn move-dir (x dx x-max)
-        (def x-new (+ x dx))
-        (cond (< x-new r-ball)           (cons r-ball (- 0 dx))
-              (> x-new (- x-max r-ball)) (cons (- x-max r-ball) (- 0 dx))
-                                         (cons x-new dx)))
-
-    ; смещает шарик, отрисовывает его и возвращает структуру смещенного шарика ;
-    (defn move-draw (ball)
-        (match ball '((x dx) (y dy) color))
-        (def xdx (move-dir x dx w-width) ydy (move-dir y dy w-height))
-        (java img-gr "setColor" color)
-        (java img-gr "fillOval" (- (car xdx) r-ball) (- (car ydy) r-ball) d-ball d-ball)
-        (cons xdx ydy color))
-
-    ; создает уникальный шарик со своими координатами, скоростью и цветом;
-    (defn new-ball ()
-        ; структура мяча: ((x dx) (y dy) color) ;
-        (defn rnd-dx () (def v (round (+ (* 10 (rnd)) 1))) (cond (< (rnd) 0.5) v (- 0 v)) )
-        (defn rnd-rgb () (round (* 200 (rnd)) ))
-        (def color (java (class "java.awt.Color") "new" (rnd-rgb) (rnd-rgb) (rnd-rgb)))
-        (cons (cons (/ w-width 2) (rnd-dx)) (cons (/ w-height 2) (rnd-dx)) color))
-
-    ; создает список из n шариков ;
-    (defn balls-list (n a) (cond (<= n 0) a (balls-list (- n 1) (cons (new-ball) a)) ))
-
-    ; анимация - очистка экрана, смещение и отрисовка шариков, обновление окна, пауза ;
-    (defn go (balls)
-        (java img-gr "clearRect" 0 0 w-width w-height)
-        (def balls-new (map move-draw balls))
-        (java window "repaint")
-        (java (class "java.lang.Thread") "sleep" 30)
-        (go balls-new))
-
-    (go (balls-list n-balls nil)) )
-
-(bouncing-balls 500 400 15 15)
+(bouncing-balls 500 400 100 30)

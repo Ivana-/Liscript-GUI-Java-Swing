@@ -288,7 +288,9 @@ public class Main extends JFrame {
                 //if (showEcho) pane.out(true, lv.toString());
 
                 pane.out(false, "=> ");
-                pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
+        //        pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
+                pane.out(true, Eval.evalIter(pane, globalEnv, lv).toString());
+
             } catch (Throwable e) {
                 Thread.currentThread().interrupt();
                 //pane.out(true, e.getLocalizedMessage());

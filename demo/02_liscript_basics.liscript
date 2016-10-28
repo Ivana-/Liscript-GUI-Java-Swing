@@ -22,10 +22,10 @@
 (show-ex (typeof 1))
 (show-ex (typeof 1.0))
 (show-ex (typeof "abc"))
-(show-ex (typeof (+ 1 2 3)))
+(show-ex (typeof '(+ 1 2 3)))
 (show-ex (typeof map))
 (show-ex (typeof defn))
-(show-ex (typeof qwszarcweatbSERYRMB24ARWQ25))
+(show-ex (typeof 'qwszarcweatbSERYRMB24ARWQ25))
 (pause)
 
 (print "

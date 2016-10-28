@@ -65,7 +65,7 @@ public class Read {
         if (fst == '(' && lst == ')')
             return tokens2ConsList(tokens(t.substring(1, length - 1)));
         else if (fst == '"' && lst == '"')
-            return new Eval.RawString(t.substring(1, length - 1));
+            return t.substring(1, length - 1);
         else if (fst == '\'') {
             Object v = tokens2LispVal(tokens(t.substring(1, length)));
             return new ConsList(Eval.SpecialForm.QUOTE, new ConsList(v, Eval.emptyList)); }
@@ -79,7 +79,8 @@ public class Read {
             catch (NumberFormatException errorInteger) {
                 try {return Double.parseDouble(t);} //Double.valueOf(t);
                 catch (NumberFormatException errorDouble) {
-                    return Eval.specialFormWords.containsKey(t) ? Eval.specialFormWords.get(t) : t;
+                    return Eval.specialFormWords.containsKey(t) ?
+                            Eval.specialFormWords.get(t) : new Eval.Symbol(t);
                 }
             }
     }

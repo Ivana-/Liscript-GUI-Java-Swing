@@ -10,8 +10,8 @@
 (defn memo-proc (proc)
     (def already-run? false result false)
     (lambda ()
-        (cond (already-run?) result
-              ((set! result (proc) already-run? true) result))))
+        (cond already-run? result
+              ((set! result (proc) already-run? true) result) )))
 (defmacro delay-memo (expr) (memo-proc (lambda () expr)))
 
 ; функция их возобновления, удачное сочетание скобок:
