@@ -19,6 +19,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
     public JTextPane editPane;
 
     public JLabel lastLoadFileNameLabel;
+    public JLabel lastOpenFileNameLabel;
     //public JCheckBox cleartextAreaIn;
 
     public static HashMap<String, Object> styleTextArea = new HashMap<>();
@@ -57,6 +58,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
         //WorkPanel thisPane = this;
         lastLoadFileNameLabel = new JLabel();
+        lastOpenFileNameLabel = new JLabel();
         //cleartextAreaIn = new JCheckBox();
 
         inputStrings = new ArrayList<String>();
@@ -166,7 +168,13 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         splitPaneAll.setDividerLocation(wa.width - 100);
 
         this.add(splitPaneAll, BorderLayout.CENTER);
-        this.add(lastLoadFileNameLabel, BorderLayout.SOUTH);
+
+        JPanel labelsPanel = new JPanel(new GridLayout(1,2));
+        labelsPanel.add(lastLoadFileNameLabel);
+        labelsPanel.add(lastOpenFileNameLabel);
+        //this.add(lastLoadFileNameLabel, BorderLayout.SOUTH);
+        this.add(labelsPanel, BorderLayout.SOUTH);
+
         //this.add(cleartextAreaIn, BorderLayout.WEST);
         this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "interruptAction");

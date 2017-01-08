@@ -277,7 +277,7 @@
 
     (defn go (c)
         (def n-c (next-chains c))
-        (cond (full-chain c) (reverse c)
+        (cond (full-chain c) c
               (null? n-c) nil
               (foldl (lambda (x a) (cond (null? a) (go x) a)) nil n-c) ))
 
@@ -285,6 +285,84 @@
 
 (defn test (m n) (print \n "для поля " m "*" n ":" \n (knight m n) \n))
 (test 4 4) (test 4 5) (test 5 5) (test 5 6)
+
+(pause)
+
+(print "ЗАДАЧА - Три миссионера и три каннибала должны пересечь реку в лодке, в которой могут поместиться только двое. Миссионеры должны соблюдать осторожность, чтобы каннибалы не получили на каком-либо берегу численное преимущество. Как переплыть реку?" \n)
+
+(defn miss-cann (m c)
+    (print "-------------------------------------  " m " миссионеров, " c " каннибалов:" \n)
+
+    (defn solve-depth (state)
+        (defn go (f)
+            (def vars (steps f))
+            (cond (solved? f) f
+                  (null? vars) nil
+                  (foldl (lambda (x a) (cond (null? a) (go x) a)) nil vars) ))
+        (go state))
+
+    (defn solve-wide (state)
+        (print "Количество анализируемых вариантов: ")
+        (defn go (vars)
+            (print (++ (length vars) " "))
+            (def rezs (filter solved? vars))
+            (cond (null? vars) nil
+                  (not (null? rezs)) rezs
+                  (go (concat (map steps vars))) ))
+        (go (cons state nil)))
+
+    (defn step-var (v state)
+        (match state '((ml cl) (mr cr) boat-left))
+        (def s (cond boat-left 1 -1) dm (* s (car v)) dc (* s (cadr v)))
+        (cons (cons (- ml dm) (- cl dc))
+              (cons (+ mr dm) (+ cr dc)) (not boat-left)) )
+
+    (defn valid? (state)
+        (match state '((ml cl) (mr cr) boat-left))
+        (defn good (m c) not (all id (cons (< 0 m) (< 0 c) (< m c))))
+        (all id (cons (<= 0 ml) (<= 0 cl) (<= 0 mr) (<= 0 cr)
+                (good ml cl) (good mr cr) (< 0 (+ mr cr)) )))
+
+    (defn steps (l)
+        (def nexts (filter valid? (map (lambda (v) step-var v (car l)) vars)))
+        (map (lambda (n) cons n l) (filter (lambda (v) not (elem v l)) nexts)))
+
+    (defn solved? (state) all (lambda (x) = 0 x) (caar state))
+
+    (defn show-res (l i)
+        (print \n "Вариант " i ":" \n)
+        (defn n-str (n s) cond (>= 0 n) "" (++ s (n-str (- n 1) s)))
+        (defn m-c (m c) (++ (n-str m "М") (n-str c "К")))
+
+        (defn go (l)
+          (cond (null? l) (+ i 1)
+            (
+            (match (car l) '((ml cl) (mr cr) boat-left))
+            (print "Левый: " (m-c ml cl) ", правый: " (m-c mr cr) " - ")
+            (cond (null? (cdr l)) (print "финиш" \n)
+                (
+                (match (cadr l) '((mln cln) _))
+                (def dm (abs (- ml mln)) dc (abs (- cl cln)))
+                (print (cond boat-left "туда: " "обратно: ") (m-c dm dc) \n)
+                ))
+            (go (cdr l))
+            )))
+        (go l))
+
+    ;(def start-state (cons (cons (cons m c) '((0 0) true)) nil));
+    (def start-state (make '(((m c) (0 0) true)) ))
+    ;(print start-state \n);
+    (def vars '((1 0) (0 1) (2 0) (0 2) (1 1)) )
+
+    (print "Поиск в глубину:")
+    (show-res (reverse (solve-depth start-state)) 1)
+
+    (print \n "Поиск в ширину:" \n)
+    (foldl (lambda (l a) show-res (reverse l) a) 1 (solve-wide start-state)) )
+
+(pause) (miss-cann 2 2)
+(pause) (miss-cann 3 3)
+(pause) (miss-cann 4 4)
 
 (pause)
 
@@ -361,9 +439,6 @@
               (foldl (lambda (x a) (cond (null? a) (go x) a)) nil vars) ))
     (go field))
 
-(print "Решение поиском в глубину:" \n)
-(print (showField (solve-depth field)) \n)
-
 (defn solve-wide (field)
     (print "Количество анализируемых вариантов: ")
     (defn go (vars)
@@ -372,6 +447,9 @@
               (noelem 0 (car vars)) vars
               (go (concat (map steps vars))) ))
     (go (cons field nil)))
+
+(print "Решение поиском в глубину:" \n)
+(print (showField (solve-depth field)) \n)
 
 (print "Поиск в ширину (ждите, занимает некоторое время)...." \n)
 (def solunions (solve-wide field))

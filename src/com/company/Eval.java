@@ -3,7 +3,6 @@ package com.company;
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
-import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -54,7 +53,7 @@ public class Eval {
         AR_ADD, AR_SUB, AR_MUL, AR_DIV, AR_MOD,
         AR_GR, AR_GR_EQ, AR_LOW, AR_LOW_EQ, AR_EQ, AR_NOT_EQ,
         ST_CONCAT,
-        EQUAL, DEF, SET, GET, CONS, CAR, CDR, QUOTE, COND, EVAL,
+        EQUAL, DEF, SET, GET, CONS, CAR, CDR, QUOTE, COND, EVAL, EVAL_IN_CONTEXT,
         TYPEOF, PRINT, READ, LAMBDA, MACRO, BEGIN, TRAY,
         CLASS, JAVA, COMPILE
     }
@@ -90,6 +89,7 @@ public class Eval {
         keyWords.put("quote", SpecialForm.QUOTE);
         keyWords.put("cond", SpecialForm.COND);
         keyWords.put("eval", SpecialForm.EVAL);
+        keyWords.put("eval-in", SpecialForm.EVAL_IN_CONTEXT);
         keyWords.put("typeof", SpecialForm.TYPEOF);
         keyWords.put("print", SpecialForm.PRINT);
         keyWords.put("read", SpecialForm.READ);
@@ -337,7 +337,7 @@ public class Eval {
         return sb.toString();
     }
 
-    //---------------------------------- EVAL ----------------------------------
+    //--------------------------- recursive EVAL ----------------------------------
 
     private static Number BinOp(SpecialForm op, Number ina, Number inb) {
         if (ina instanceof Double || inb instanceof Double) {
@@ -904,9 +904,7 @@ public class Hello {
 
     private static Object invokeMethod(int d, InOutable io, Env env,
                                        Class c, Object o, String name, ConsList params) {
-
-        if (name.equals("castComponent")) return (Component) o;
-        //else
+        //if (name.equals("castComponent")) return (Component) o;
 
         int paramCnt = 0, paramsSize = params.size();
         ConsList p = params;
@@ -925,61 +923,16 @@ public class Hello {
         if (name.equals("new")) {
             Constructor cn = constructorForParams(c, paramTypes);
             try {
-                Object r = null;
-                if (paramsSize == 0) {
-                    r = cn.newInstance();
-                } else if (paramsSize == 1) {
-                    r = cn.newInstance(paramValues[0]);
-                } else if (paramsSize == 2) {
-                    r = cn.newInstance(paramValues[0], paramValues[1]);
-                } else if (paramsSize == 3) {
-                    r = cn.newInstance(paramValues[0], paramValues[1], paramValues[2]);
-                } else if (paramsSize == 4) {
-                    r = cn.newInstance(paramValues[0], paramValues[1], paramValues[2], paramValues[3]);
-                } else if (paramsSize == 5) {
-                    r = cn.newInstance(paramValues[0],
-                            paramValues[1],
-                            paramValues[2],
-                            paramValues[3],
-                            paramValues[4]);
-                } else throw new RuntimeException("Конструктор " + c.getName()
-                        + " - параметров больше чем реализовано");
-                return ret(d, io, r);
-            } catch (Throwable e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
+                return cn.newInstance(paramValues);
+            } catch (Throwable e) {throw new RuntimeException(e.getMessage(), e);}
         }
 
         Method m = methodForName(c, name, paramTypes);
-        Object mobj = o;
-        if (Modifier.isStatic(m.getModifiers())) mobj = null;
-
         try {
-            Object r = null;
-            if (paramsSize == 0) {
-                r = m.invoke(mobj);
-            } else if (paramsSize == 1) {
-                r = m.invoke(mobj, paramValues[0]);
-            } else if (paramsSize == 2) {
-                r = m.invoke(mobj, paramValues[0], paramValues[1]);
-            } else if (paramsSize == 3) {
-                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2]);
-            } else if (paramsSize == 4) {
-                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2], paramValues[3]);
-            } else if (paramsSize == 5) {
-                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2],
-                        paramValues[3], paramValues[4]);
-            } else if (paramsSize == 6) {
-                r = m.invoke(mobj, paramValues[0], paramValues[1], paramValues[2],
-                        paramValues[3], paramValues[4], paramValues[5]);
-            } else throw new RuntimeException("Метод " + name + "параметров больше чем " +
-                    "реализовано");
-            return ret(d, io, r == null ? stringOK : r);
-        } catch (Throwable e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
+            Object r = m.invoke(Modifier.isStatic(m.getModifiers()) ? null : o, paramValues);
+            return r == null ? stringOK : r;
+        } catch (Throwable e) {throw new RuntimeException(e.getMessage(), e);}
     }
-
 
     /**
      * вычисляет значение переданного выражения
@@ -995,12 +948,14 @@ public class Hello {
 
         int d = sl + (sl < 0 ? 0 : 1);
         //tray(d, io, inobj);
-
-        if (1 == 1) {
+/*
+        if (1 == 2) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("commented recursive Eval.....");
 
-        } else if (Thread.currentThread().isInterrupted()) {
+        } else
+*/
+        if (Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted recursive Eval.....");
             //return ret(d, io, emptyList);
@@ -1217,6 +1172,14 @@ public class Hello {
                     case EVAL:
                         return ret(d, io, eval(d, true, io, env, eval(d, true, io, env, ls.car)));
 
+                    case EVAL_IN_CONTEXT:
+                        v = eval(d, true, io, env, ls.car);
+                        if (v instanceof Func) {
+                            Func f = (Func) v;
+                            return ret(d, io, eval(d, true, io, f.clojure, ls.cdr));
+                        } else
+                            throw new RuntimeException("eval-in - 1 argument isn't lambda");
+
                     case TYPEOF:
                         //v = ls.car;
                         v = eval(d, true, io, env, ls.car);
@@ -1349,8 +1312,7 @@ public class Hello {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-
+    //--------------------------- iterative EVAL ----------------------------------
 
 
     public static class StackItem {
@@ -1471,14 +1433,6 @@ public class Hello {
         ConsList r = (o instanceof ConsList) ? (ConsList) o : new ConsList(o, emptyList);
         while (!l.isEmpty()) r = new ConsList(l.removeLast(), r);
         return r;
-    }
-
-    public class Test {
-        private int i;
-
-        Test(Integer i_) {i = i_;}
-
-        public int met() {return i;}
     }
 
     public static Object evalLinkedList(InOutable io, Env env, ArrayDeque<Object> ls) {
@@ -1682,7 +1636,8 @@ public class Hello {
 
         PrintWriter writer = new PrintWriter("StackLog.txt");
         boolean log = false; //true;
-        int maxstacksize = 0; //true;
+        int maxstacksize = 0;
+        Main.maxstacksize = 0;
 
         if (inobj == null) {
             Thread.currentThread().interrupt();
@@ -1827,6 +1782,18 @@ public class Hello {
                                     if (si.l.size() > 1) updsi(si.l.getLast(), si);
                                     break;
 
+                                case EVAL_IN_CONTEXT:
+                                    if (si.l.size() == 2) {
+                                        Object o = si.l.getLast();
+                                        if (o instanceof Func) {
+                                            Func f = (Func) o;
+                                            si.upd(si.p, f.clojure);
+                                        } else
+                                            throw new RuntimeException(
+                                                    "eval-in - 1 argument isn't lambda");
+                                    }
+                                    break;
+
 //                                case TYPEOF:
 //                                    break;
 
@@ -1913,7 +1880,8 @@ public class Hello {
                         si.p = si.p.cdr;
                     } else {
                         if (log) writer.close();
-                        io.out(true, "max stack size = " + maxstacksize);
+                        //io.out(true, "max stack size = " + maxstacksize);
+                        Main.maxstacksize = maxstacksize;
                         return r;
                     }
                 }

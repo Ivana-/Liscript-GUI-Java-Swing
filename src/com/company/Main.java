@@ -2,6 +2,7 @@ package com.company;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,6 +16,8 @@ public class Main extends JFrame {
     public static Env globalEnv;
     public static JTabbedPane tabbedPane;
     public static Main application;
+    private static JCheckBox checkBoxEvalIter, checkBoxShowEvalTime;
+    public static int maxstacksize;
 
     Main() {
         super("Liscript REPL v.0.1");
@@ -183,6 +186,114 @@ public class Main extends JFrame {
         buttonsPanel.add(button);
         buttonsPanel.addSeparator();
 
+        Action openFileAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                WorkPanel pane = (WorkPanel)tabbedPane.getSelectedComponent();
+                if (pane == null) return;
+                //if (pane.thread != null) return;
+                //if (pane.isCin) return;
+
+                JFileChooser fileopen = new JFileChooser();
+                fileopen.setCurrentDirectory(new File("demo\\"));
+                fileopen.setFileFilter(new FileNameExtensionFilter("liscript files", "liscript"));
+                int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
+                if (ret == JFileChooser.APPROVE_OPTION) {
+                    String fileAbsolutePath = fileopen.getSelectedFile().getAbsolutePath();
+                    try {
+                        String s = readFileToString(fileAbsolutePath);
+                        //pane.editPane.setText(s);
+                        pane.editPane.setText("");
+                        Document doc = pane.editPane.getDocument();
+                        doc.insertString(doc.getLength(), s, null);
+                        pane.lastOpenFileNameLabel.setText(fileAbsolutePath);
+                    } catch (Throwable ex) { //(IOException ex) { (BadLocationException exc) {
+                        pane.out(true, ex.getLocalizedMessage());
+                    }
+                }
+            }
+        };
+        button = new JButton();
+        button.setAction(openFileAction);
+        button.setToolTipText("open file");
+        button.setIcon(createImageIcon("images/Open.png", button.getToolTipText()));
+        buttonsPanel.add(button);
+
+        Action saveFileAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                WorkPanel pane = (WorkPanel)tabbedPane.getSelectedComponent();
+                if (pane == null) return;
+                //if (pane.thread != null) return;
+                //if (pane.isCin) return;
+
+                String fileName = pane.lastOpenFileNameLabel.getText();
+                //if (!fileName.endsWith(".liscript")) fileName = fileName + ".liscript";
+                if (fileName.isEmpty()) {
+                    JOptionPane.showMessageDialog(application, "Не выбран файл",
+                            "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                String s = pane.editPane.getText();
+                if (s.isEmpty()) {
+                    JOptionPane.showMessageDialog(application, "Текст пуст",
+                            "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                try {
+                    writeStringToFile(s, fileName);
+                } catch (IOException ex) {
+                    pane.out(true, ex.getLocalizedMessage());
+                }
+            }
+        };
+        button = new JButton();
+        button.setAction(saveFileAction);
+        button.setToolTipText("save file");
+        button.setIcon(createImageIcon("images/Save.png", button.getToolTipText()));
+        buttonsPanel.add(button);
+
+        Action saveFileAsAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                WorkPanel pane = (WorkPanel)tabbedPane.getSelectedComponent();
+                if (pane == null) return;
+                //if (pane.thread != null) return;
+                //if (pane.isCin) return;
+
+                String s = pane.editPane.getText();
+                if (s.isEmpty()) {
+                    JOptionPane.showMessageDialog(application, "Текст пуст",
+                            "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                JFileChooser fileopen = new JFileChooser();
+                fileopen.setCurrentDirectory(new File("demo\\"));
+                fileopen.setFileFilter(new FileNameExtensionFilter("liscript files", "liscript"));
+                int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
+                if (ret == JFileChooser.APPROVE_OPTION) {
+                    String fileName = fileopen.getSelectedFile().getAbsolutePath();
+                    if (fileName.isEmpty()) {
+                        JOptionPane.showMessageDialog(application, "Не выбран файл",
+                                "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (!fileName.endsWith(".liscript")) fileName = fileName + ".liscript";
+                    try {
+                        writeStringToFile(s, fileName);
+                        pane.lastOpenFileNameLabel.setText(fileName);
+                    } catch (IOException ex) {
+                        pane.out(true, ex.getLocalizedMessage());
+                    }
+                }
+            }
+        };
+        button = new JButton();
+        button.setAction(saveFileAsAction);
+        button.setToolTipText("save file as");
+        button.setIcon(createImageIcon("images/Save as.png", button.getToolTipText()));
+        buttonsPanel.add(button);
+
         Action sendEditPaneInputAction = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -195,6 +306,14 @@ public class Main extends JFrame {
         button.setToolTipText("run edit pane (Ctrl+F1)");
         button.setIcon(createImageIcon("images/Play.png", button.getToolTipText()));
         buttonsPanel.add(button);
+        buttonsPanel.addSeparator();
+
+        checkBoxEvalIter = new JCheckBox("Итеративный эвалюатор");
+        //checkBoxBold.setSelected((boolean) attr.getAttribute(StyleConstants.Bold));
+        buttonsPanel.add(checkBoxEvalIter);
+
+        checkBoxShowEvalTime = new JCheckBox("Замерять время");
+        buttonsPanel.add(checkBoxShowEvalTime);
 
         getContentPane().setLayout(new BorderLayout());
         tabbedPane = new JTabbedPane();
@@ -289,9 +408,23 @@ public class Main extends JFrame {
 
                 pane.out(false, "=> ");
         //        pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
-                pane.out(true, Eval.evalIter(pane, globalEnv, lv).toString());
+        //        pane.out(true, Eval.evalIter(pane, globalEnv, lv).toString());
 
-            } catch (Throwable e) {
+                long time;
+                time = System.nanoTime();
+
+                if (checkBoxEvalIter.isSelected()) {
+                    pane.out(true, Eval.evalIter(pane, globalEnv, lv).toString());
+                    pane.out(true, "max стек: " + maxstacksize);
+                } else {
+                    pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
+                }
+
+                time = System.nanoTime() - time;
+                if (checkBoxShowEvalTime.isSelected())
+                    pane.out(true, "" + String.format("%.5f", time/1.E9) + " сек");
+
+                } catch (Throwable e) {
                 Thread.currentThread().interrupt();
                 //pane.out(true, e.getLocalizedMessage());
                 pane.out(true, e.toString());
@@ -389,6 +522,12 @@ public class Main extends JFrame {
     private static String readFileToString (String fileAbsolutePath) throws IOException {
         byte[] fileBytes = Files.readAllBytes(Paths.get(fileAbsolutePath));
         return new String(fileBytes, StandardCharsets.UTF_8);
+    }
+
+    private static void writeStringToFile (String s, String fileAbsolutePath) throws
+            IOException {
+        byte[] stringBytes = s.getBytes(StandardCharsets.UTF_8);
+        Files.write(Paths.get(fileAbsolutePath), stringBytes);
     }
 
     private static void loadFile (String fileName) {

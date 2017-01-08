@@ -1,0 +1,41 @@
+(defn translate (e)
+    cond (list? e) (conv-form e)
+         (eq? e 'mod) 'modulo
+         (eq? e 'nil) 'nil
+         (eq? e 'true) '#t
+         (eq? e 'false) '#f
+         (eq? e 'eq?) 'equal?
+         (eq? e '\n) "\n"
+         (eq? e '++) 'string-append
+         (eq? e '/) 'quotient
+         (eq? e 'cons) 'cons-
+         (eq? e 'car) 'car-
+         (eq? e 'cdr) 'cdr-
+         e)
+
+(defn conv-form (l)
+    (def op (car l) t (cdr l))
+    (cond (eq? op 'defn) ((match t '(n a b)) (cons 'define (cons n a) (translate-body b)))
+          (eq? op 'def)  (conv-pairs 'define (translate t))
+          (eq? op 'cond)  (cons 'cond (conv-cond (translate t)))
+          (eq? op 'print)  (conv-each 'display (translate t))
+          (map translate l)))
+
+(defn conv-cond (l)
+    (def p (car l) v (cadr l))
+    (cond (null? l) nil
+          (null? (cdr l)) (cons (cons 'else (cons p nil)) nil)
+                          (cons (cons p v nil) (conv-cond (cddr l))) ))
+(defn conv-pairs (f l)
+    (defn go (l) cond (null? (cdr l)) nil (cons (cons f (car l) (cadr l) nil) (go (cddr l))) )
+    (def r (go l))
+    (cond (< 1 (length r)) (cons 'begin r) (car r)))
+
+(defn conv-each (f l)
+    (defn go (l) cond (null? l) nil (cons (cons f (car l) nil) (go (cdr l))) )
+    (def r (go l))
+    (cond (< 1 (length r)) (cons 'begin r) (car r)))
+
+(defn translate-body (b) (def tb (translate b)) (cond (list? (car tb)) tb (cons tb nil)))
+
+(defmacro translate-to-scheme (e) (translate 'e))

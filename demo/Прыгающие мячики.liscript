@@ -40,12 +40,13 @@
         (java balls "put" (+ (java balls "size") 1) ball))
 
     ; анимация - очистка экрана, смещение и отрисовка шариков, обновление окна, пауза ;
-    (defn go () while true
+    (defn go () ;while true;
         (java img-gr "clearRect" 0 0 w-width w-height)
         (def n n-balls)
         (while (> n 0) (move-draw (java balls "get" n)) (set! n (- n 1)))
         (java window "repaint")
-        (java (class "java.lang.Thread") "sleep" 50))
+        (java (class "java.lang.Thread") "sleep" 50)
+        (go))
 
     ; параметры окна и графики, вызываются макросы стандартной библиотеки ;
     (def image (new-image w-width w-height))

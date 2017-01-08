@@ -30,6 +30,18 @@
 (def \n "
 ")
 
+(defn tolist (x) (cond (list? x) x (cons x nil)))
+(defn inl (x) (cons x nil))
+(defn ntimes (n f x) (cond (<= n 0) x (ntimes (- n 1) f (f x))))
+(defn inln (n x) (ntimes n inl x))
+
+(defn not (x)   (cond x false true))
+(defmacro and (x y) (cond x y false))
+(defmacro or  (x y) (cond x true y))
+(defmacro xor (x y) (cond (eq? x y) false true))
+(defn abs (x) cond (> 0 x) (- 0 x) x)
+(defn id (x) x)
+
 (defmacro cadr (l) (car (cdr l)))
 (defmacro cddr (l) (cdr (cdr l)))
 (defmacro caar (l) (car (car l)))
@@ -50,9 +62,20 @@
               (and (eq? (car args) (car vals)) (match (cdr vals) (cdr args)))
           false))
 
+;(defmacro make (body) mapa (lambda (x) eval x) body);
+(defmacro make (l)
+    (cond (atom? l) (eval l)
+          (null? l) nil
+                    (cons (make (car l)) (make (cdr l)))))
+
 (defn list-from-to (a b)
     (defn go (i l) (cond (< i a) l (go (- i 1) (cons i l)) ))
     (go b nil))
+
+(defn replicate (n x)
+    (defn go (n a) cond (>= 0 n) a (go (- n 1) (cons x a)))
+    (go n nil))
+
 (defn list-ref (n l) (cond (= 0 n) (car l) (list-ref (- n 1) (cdr l))))
 
 (defn length (l)
@@ -127,17 +150,6 @@
           (null? l) nil
           (cons (mapa f (car l)) (mapa f (cdr l)))))
 
-(defn tolist (x) (cond (list? x) x (cons x nil)))
-(defn inl (x) (cons x nil))
-(defn ntimes (n f x) (cond (<= n 0) x (ntimes (- n 1) f (f x))))
-(defn inln (n x) (ntimes n inl x))
-
-(defn not (x)   (cond x false true))
-(defn and (x y) (cond x y false))
-;(defn or  (x y) (cond x true y true false));
-(defn or  (x y) (cond x true y))
-(defn xor (x y) (cond (eq? x y) false true))
-
 (defn flatten (l)
     (cond (atom? l) l
           (null? l) nil
@@ -150,6 +162,9 @@
         (cond (elem nil cars) nil (cons (eval (cons 'f cars)) (go cdrs))))
     (go ls))
 
+(defn sort (l)
+    cond (null? l) nil (append (sort (filter (lambda (x) <  x (car l)) (cdr l)))
+                 (cons (car l) (sort (filter (lambda (x) >= x (car l)) (cdr l))))))
 
 
 ; Функции и макросы работы с графикой ;
