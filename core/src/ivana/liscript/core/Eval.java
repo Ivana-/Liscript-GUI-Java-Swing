@@ -6,7 +6,6 @@ import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -1622,7 +1621,7 @@ public class Hello {
     public static Object evalIter(InOutable io, Env env, Object inobj) throws
             FileNotFoundException {
 
-        PrintWriter writer = new PrintWriter("StackLog.txt");
+        //PrintWriter writer = new PrintWriter("StackLog.txt");
         boolean log = false; //true;
         int maxstacksize = 0;
         //Main.maxstacksize = 0;
@@ -1649,7 +1648,7 @@ public class Hello {
                 while (true) {
                     if (Thread.currentThread().isInterrupted()) {
 
-                        if (log) writer.close();
+                    //    if (log) writer.close();
                         //io.out(true, "max stack size = " + maxstacksize);
 
                         Thread.currentThread().interrupt();
@@ -1835,7 +1834,7 @@ public class Hello {
 
                             maxstacksize =
                                     stack.size() > maxstacksize ? stack.size() : maxstacksize;
-                            if (log) writer.println("" + stack.size());
+                            //if (log) writer.println("" + stack.size());
                         }
                     } else {
                         si.l.addLast(si.p.car);
@@ -1862,14 +1861,14 @@ public class Hello {
                     Object r = evalLinkedList(io, si.env, si.l);
                     stack.removeFirst();
 
-                    if (log) writer.println("" + stack.size());
+                    //if (log) writer.println("" + stack.size());
 
                     if (stack.size() > 0) {
                         si = stack.getFirst();
                         si.l.addLast(r);
                         si.p = si.p.cdr;
                     } else {
-                        if (log) writer.close();
+                    //    if (log) writer.close();
                         //io.out(true, "max stack size = " + maxstacksize);
                         //Main.maxstacksize = maxstacksize;
                         return r;

@@ -1,8 +1,6 @@
 package ivana.liscript.gui.swing;
 
-import ivana.liscript.core.Env;
-import ivana.liscript.core.Eval;
-import ivana.liscript.core.Read;
+import ivana.liscript.core.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -428,7 +426,7 @@ public class Main extends JFrame {
                 if (checkBoxShowEvalTime.isSelected())
                     pane.out(true, "" + String.format("%.5f", time/1.E9) + " сек");
 
-                } catch (Throwable e) {
+            } catch (Throwable e) {
                 Thread.currentThread().interrupt();
                 //pane.out(true, e.getLocalizedMessage());
                 pane.out(true, e.toString());

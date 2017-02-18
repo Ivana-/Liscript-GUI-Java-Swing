@@ -7,7 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class GuiButton extends JButton {
-    private ivana.liscript.core.Eval.ConsList liscriptCode;
+    private Eval.ConsList liscriptCode;
 
     public void setLambda(ivana.liscript.core.Eval.Func lambda) {
         liscriptCode = new Eval.ConsList(lambda, Eval.emptyList);
