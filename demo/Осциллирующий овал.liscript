@@ -1,4 +1,4 @@
-(defn oval-oscilator ()
+(defn oval-oscilator  ()
 
 (def WHeight 300 WWidth 300)
 (def img (new-image WWidth WHeight))
