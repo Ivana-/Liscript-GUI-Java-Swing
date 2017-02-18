@@ -14,7 +14,7 @@
 (defn pause-button-action ()
     (set! PAUSE (not PAUSE))
     (java btn "setText" (cond PAUSE "Run" "Pause")))
-(def btn (java (class "com.company.GuiButton") "new"))
+(def btn (java (class "ivana.liscript.gui.swing.GuiButton") "new"))
 (java btn "setText" "Pause")
 (java btn "setLambda" pause-button-action)
 (java w "add" btn)
