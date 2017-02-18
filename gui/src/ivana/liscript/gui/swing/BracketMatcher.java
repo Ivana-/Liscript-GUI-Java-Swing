@@ -1,4 +1,4 @@
-package com.company;
+package ivana.liscript.gui.swing;
 
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;

@@ -1,6 +1,7 @@
-package com.company;
+package ivana.liscript.gui.swing;
 
-import com.company.Main.InterThread;
+import ivana.liscript.core.Eval;
+import ivana.liscript.gui.swing.Main.InterThread;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -61,7 +62,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         lastOpenFileNameLabel = new JLabel();
         //cleartextAreaIn = new JCheckBox();
 
-        inputStrings = new ArrayList<String>();
+        inputStrings = new ArrayList<>();
         inputStringsIndex = 0;
 
         thread = null;
@@ -314,6 +315,9 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         if (SwingUtilities.isEventDispatchThread()) doIt.run();
         else SwingUtilities.invokeLater(doIt);
     }
+
+    @Override
+    public void outFromRead(String s) { out(false, s); }
 
     @Override
     public String in() {

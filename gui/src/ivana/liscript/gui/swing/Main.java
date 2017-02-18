@@ -1,4 +1,8 @@
-package com.company;
+package ivana.liscript.gui.swing;
+
+import ivana.liscript.core.Env;
+import ivana.liscript.core.Eval;
+import ivana.liscript.core.Read;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -326,7 +330,7 @@ public class Main extends JFrame {
         getContentPane().add(buttonsPanel, BorderLayout.NORTH);
 
         //this.setBounds(100, 100, 500, 400);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
     protected ImageIcon createImageIcon(String path, String description) {

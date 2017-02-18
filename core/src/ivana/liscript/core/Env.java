@@ -1,4 +1,4 @@
-package com.company;
+package ivana.liscript.core;
 
 import java.util.HashMap;
 
@@ -16,12 +16,12 @@ public class Env {
      * @param m словарь строковый ключ-значение
      * @param p родительское окружение
      */
-    Env (HashMap<String, Object> m, Env p) { map = m; parent = p; }
+    public Env (HashMap<String, Object> m, Env p) { map = m; parent = p; }
 
-    /** Конструктор без параметров. Возвращает окружение с пустым словарем и родительским
+    /** Конструктор без параметров. Возвращает окружение с пустым словарем и пустым родительским
      * окружением.
      */
-    Env () { this(new HashMap<String, Object>(), null); }
+    public Env () { this(new HashMap<>(), null); }
 
     //public Env subEnv(HashMap<String, Object> m) { return new Env(m, this); }
 
@@ -57,9 +57,7 @@ public class Env {
      * @param var строка-ключ
      * @param value объект-значение
      */
-    public void defVar(String var, Object value) {
-        this.map.put(var, value);
-    }
+    public void defVar(String var, Object value) { this.map.put(var, value); }
 
     /** возвращает истину, если данный ключ связан со значением в любом словаре из иерархии вверх
      *  от текущего.
