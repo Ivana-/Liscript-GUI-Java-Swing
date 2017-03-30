@@ -1,4 +1,4 @@
-package com.company;
+package ivana.liscript.gui.swing;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -27,7 +27,7 @@ public class SettingsDialog extends JDialog {
         XMLDecoder decoder =
                 new XMLDecoder(new BufferedInputStream(
                         new FileInputStream(filename)));
-        Object o = (Object)decoder.readObject();
+        Object o = decoder.readObject();
         decoder.close();
         return o;
     }
@@ -464,7 +464,7 @@ public class SettingsDialog extends JDialog {
              InputStream bufStream = new BufferedInputStream(fileStream);
              XMLDecoder decoder = new XMLDecoder(bufStream)) {
 
-            Object o = (Object)decoder.readObject();
+            Object o = decoder.readObject();
             decoder.close();
 
             if (!(o instanceof HashMap)) return;

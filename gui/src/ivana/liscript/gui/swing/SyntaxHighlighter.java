@@ -1,4 +1,6 @@
-package com.company;
+package ivana.liscript.gui.swing;
+
+import ivana.liscript.core.Eval;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -15,7 +17,7 @@ public class SyntaxHighlighter implements DocumentListener {
     //SimpleAttributeSet styleEmpty;
 
     //static HashMap<String, SimpleAttributeSet> keyWordStyles;
-    static HashSet<String> booleanKeyWords = new HashSet<String>();
+    static HashSet<String> booleanKeyWords = new HashSet<>();
     static SimpleAttributeSet styleUtil = new SimpleAttributeSet();
     static SimpleAttributeSet styleNumber = new SimpleAttributeSet();
     static SimpleAttributeSet styleBoolean = new SimpleAttributeSet();

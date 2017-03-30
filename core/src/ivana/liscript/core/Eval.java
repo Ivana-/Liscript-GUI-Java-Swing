@@ -1,4 +1,4 @@
-package com.company;
+package ivana.liscript.core;
 
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
@@ -6,7 +6,6 @@ import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -16,7 +15,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
 
 /**
  * Производит вычисление переданного объекта в переданном окружении
@@ -34,7 +32,7 @@ public class Eval {
      * объект - строка "ОК", возвращается когда все сделано и нечего вернуть,
      * чтобы не плодить их много
      */
-    public static String stringOK = "OK"; //new RawString("OK");
+    public static String stringOK = "OK";
 
     /**
      * интерфейс, реализующий ввод-вывод информации в строковом виде в процессе вычисления
@@ -42,7 +40,7 @@ public class Eval {
      */
     public interface InOutable {
         void out(boolean newLine, String string);
-
+        void outFromRead(String string);
         String in();
     }
 
@@ -64,7 +62,7 @@ public class Eval {
     public static HashMap<String, SpecialForm> specialFormWords = setSpecialFormWords();
 
     private static HashMap<String, SpecialForm> setSpecialFormWords() {
-        HashMap<String, SpecialForm> keyWords = new HashMap<String, SpecialForm>();
+        HashMap<String, SpecialForm> keyWords = new HashMap<>();
 
         keyWords.put("+", SpecialForm.AR_ADD);
         keyWords.put("-", SpecialForm.AR_SUB);
@@ -127,10 +125,7 @@ public class Eval {
          * @param h объект - голова списка
          * @param t список - хвост списка
          */
-        ConsList(Object h, ConsList t) {
-            car = h;
-            cdr = t;
-        }
+        public ConsList(Object h, ConsList t) { car = h; cdr = t; }
 
         /**
          * проверяет, является ли список пустым
@@ -251,26 +246,20 @@ public class Eval {
          *
          * @param n строка - имя символа
          */
-        Symbol(String n) {
-            name = n;
-        }
+        Symbol(String n) { this.name = n; }
 
         /**
          * проверяет, является ли символ пустым
          *
          * @return истина/ложь
          */
-        public boolean isEmpty() {
-            return name.isEmpty();
-        }
+        //public boolean isEmpty() { return this.name.isEmpty(); }
 
         /**
          * @return строковое представление текущего типа
          */
         @Override
-        public String toString() {
-            return name;
-        }
+        public String toString() { return this.name; }
     }
 
     private static String showConsList(ConsList p) {
@@ -280,10 +269,6 @@ public class Eval {
             p = p.cdr;
         }
         while (!p.isEmpty()) {
-            //if (Thread.currentThread().isInterrupted()) {
-            //    Thread.currentThread().interrupt();
-            //    throw new RuntimeException("interrupted lalalala.....");
-            //}
             sb.append(" ");
             sb.append(showVal(p.car));
             p = p.cdr;
@@ -589,7 +574,7 @@ public class Eval {
     private static HashMap<String, Object> getMapArgsVals(
             int d, InOutable io, Env env, ConsList pa, ConsList pv, boolean evalVals) {
 
-        HashMap<String, Object> m = new HashMap<String, Object>();
+        HashMap<String, Object> m = new HashMap<>();
         while (!pa.isEmpty() && !pv.isEmpty()) {
             if (pa.cdr.isEmpty() && !pv.cdr.isEmpty())
                 m.put(pa.car.toString(), evalVals ? evalCons(d, io, env, pv) : pv);
@@ -641,7 +626,7 @@ public class Eval {
                 try {
                     return Class.forName(name);
                 } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e.getMessage(), e);
+                    throw new RuntimeException(e.getLocalizedMessage(), e);
                 }
         }
     }
@@ -785,9 +770,7 @@ public class Hello {
 // Load and instantiate compiled class.
         URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{root.toURI().toURL()});
         //Class<?> cls = Class.forName("test.Test", true, classLoader); // Should print "hello".
-        Class<?> cls = Class.forName("test.Hello", true, classLoader);
-
-        return cls;
+        return Class.forName("test.Hello", true, classLoader);
     }
 
     private static HashMap<String, Method> methodsHash = new HashMap<>();
@@ -805,7 +788,7 @@ public class Hello {
 
         //Method[] ms = c.getDeclaredMethods();
         Constructor[] cns = c.getConstructors();
-        ArrayList<Constructor> f1 = new ArrayList<Constructor>();
+        ArrayList<Constructor> f1 = new ArrayList<>();
         for (Constructor cn : cns) {
             if (!Modifier.isPublic(cn.getModifiers())
                     || (!cn.isVarArgs() && paramTypes.length != cn.getParameterCount())
@@ -824,7 +807,7 @@ public class Hello {
         //methodsHash.put(keyHash, f1.get(0));
         //return f1.get(0);
 
-        ArrayList<Constructor> f2 = new ArrayList<Constructor>();
+        ArrayList<Constructor> f2 = new ArrayList<>();
         for (Constructor cn : f1) {
             if (!Arrays.equals(cn.getParameterTypes(), paramTypes)) continue;
             f2.add(cn);
@@ -851,7 +834,7 @@ public class Hello {
 
         //Method[] ms = c.getDeclaredMethods();
         Method[] ms = c.getMethods();
-        ArrayList<Method> f1 = new ArrayList<Method>();
+        ArrayList<Method> f1 = new ArrayList<>();
         for (Method m : ms) {
             if (!Modifier.isPublic(m.getModifiers())
                     || !m.getName().equals(name)
@@ -924,14 +907,14 @@ public class Hello {
             Constructor cn = constructorForParams(c, paramTypes);
             try {
                 return cn.newInstance(paramValues);
-            } catch (Throwable e) {throw new RuntimeException(e.getMessage(), e);}
+            } catch (Throwable e) {throw new RuntimeException(e.getLocalizedMessage(), e);}
         }
 
         Method m = methodForName(c, name, paramTypes);
         try {
             Object r = m.invoke(Modifier.isStatic(m.getModifiers()) ? null : o, paramValues);
             return r == null ? stringOK : r;
-        } catch (Throwable e) {throw new RuntimeException(e.getMessage(), e);}
+        } catch (Throwable e) {throw new RuntimeException(e.getLocalizedMessage(), e);}
     }
 
     /**
@@ -957,12 +940,12 @@ public class Hello {
 */
         if (Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupted recursive Eval.....");
+            throw new RuntimeException("вычисление прервано");
             //return ret(d, io, emptyList);
 
         } else if (inobj == null) {
             Thread.currentThread().interrupt();
-            throw new Error("interrupted recursive Eval: inobj == null.....");
+            throw new Error("вычисление прервано: передан null");
             //return ret(d, io, emptyList);
 
         } else if (inobj instanceof Symbol) {
@@ -1027,7 +1010,7 @@ public class Hello {
                             return ret(d, io, compileClassForCode(name));
 
                         } catch (Throwable e) {
-                            throw new RuntimeException(e.getMessage(), e);
+                            throw new RuntimeException(e.getLocalizedMessage(), e);
                         }
 /*
                     case METHOD:
@@ -1178,7 +1161,7 @@ public class Hello {
                             Func f = (Func) v;
                             return ret(d, io, eval(d, true, io, f.clojure, ls.cdr));
                         } else
-                            throw new RuntimeException("eval-in - 1 argument isn't lambda");
+                            throw new RuntimeException("eval-in - первый аргумент НЕ lambda");
 
                     case TYPEOF:
                         //v = ls.car;
@@ -1203,6 +1186,10 @@ public class Hello {
                         return ret(d, io, stringOK);
 
                     case READ:
+                        while (!ls.isEmpty()) {
+                            io.outFromRead(eval(d, true, io, env, ls.car).toString());
+                            ls = ls.cdr;
+                        }
                         return ret(d, io, Read.string2LispVal(io.in()));
 
                     case LAMBDA:
@@ -1283,7 +1270,7 @@ public class Hello {
                     //} catch (IllegalAccessException e) {
                     //   throw new RuntimeException(e.getMessage(), e);
                 } catch (Throwable e) {
-                    throw new RuntimeException(e.getMessage(), e);
+                    throw new RuntimeException(e.getLocalizedMessage(), e);
                 }
 
             } else {
@@ -1396,14 +1383,14 @@ public class Hello {
             Constructor cn = constructorForParams(c, paramTypes);
             try {
                 return cn.newInstance(paramValues);
-            } catch (Throwable e) {throw new RuntimeException(e.getMessage(), e);}
+            } catch (Throwable e) {throw new RuntimeException(e.getLocalizedMessage(), e);}
         }
 
         Method m = methodForName(c, name, paramTypes);
         try {
             Object r = m.invoke(Modifier.isStatic(m.getModifiers()) ? null : o, paramValues);
             return r == null ? stringOK : r;
-        } catch (Throwable e) {throw new RuntimeException(e.getMessage(), e);}
+        } catch (Throwable e) {throw new RuntimeException(e.getLocalizedMessage(), e);}
     }
 
     private static ConsList convertLinkedToConsList(ArrayDeque<Object> l) {
@@ -1464,7 +1451,7 @@ public class Hello {
                         //return ret(d, io, stringOK);
                         return compileClassForCode(name);
                     } catch (Throwable e) {
-                        throw new RuntimeException(e.getMessage(), e);
+                        throw new RuntimeException(e.getLocalizedMessage(), e);
                     }
 
                 case AR_ADD:
@@ -1634,14 +1621,14 @@ public class Hello {
     public static Object evalIter(InOutable io, Env env, Object inobj) throws
             FileNotFoundException {
 
-        PrintWriter writer = new PrintWriter("StackLog.txt");
+        //PrintWriter writer = new PrintWriter("StackLog.txt");
         boolean log = false; //true;
         int maxstacksize = 0;
-        Main.maxstacksize = 0;
+        //Main.maxstacksize = 0;
 
         if (inobj == null) {
             Thread.currentThread().interrupt();
-            throw new Error("interrupted inobj == null.....");
+            throw new Error("вычисление прервано: передан null");
 
         } else if (inobj instanceof Symbol) return env.getVar(inobj.toString());
 
@@ -1661,11 +1648,11 @@ public class Hello {
                 while (true) {
                     if (Thread.currentThread().isInterrupted()) {
 
-                        if (log) writer.close();
-                        io.out(true, "max stack size = " + maxstacksize);
+                    //    if (log) writer.close();
+                        //io.out(true, "max stack size = " + maxstacksize);
 
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException("interrupted ITER lalalala.....");
+                        throw new RuntimeException("вычисление прервано");
                     }
 
                     // головная форма уже рассчитана - в голове si.l
@@ -1790,7 +1777,7 @@ public class Hello {
                                             si.upd(si.p, f.clojure);
                                         } else
                                             throw new RuntimeException(
-                                                    "eval-in - 1 argument isn't lambda");
+                                                    "eval-in - первый аргумент НЕ lambda");
                                     }
                                     break;
 
@@ -1802,8 +1789,10 @@ public class Hello {
                                         io.out(false, si.l.removeLast().toString());
                                     break;
 
-//                                case READ:
-//                                    break;
+                                case READ:
+                                    if (si.l.size() > 1)
+                                        io.outFromRead(si.l.removeLast().toString());
+                                    break;
 
                                 case LAMBDA:
                                 case MACRO:
@@ -1845,7 +1834,7 @@ public class Hello {
 
                             maxstacksize =
                                     stack.size() > maxstacksize ? stack.size() : maxstacksize;
-                            if (log) writer.println("" + stack.size());
+                            //if (log) writer.println("" + stack.size());
                         }
                     } else {
                         si.l.addLast(si.p.car);
@@ -1872,16 +1861,16 @@ public class Hello {
                     Object r = evalLinkedList(io, si.env, si.l);
                     stack.removeFirst();
 
-                    if (log) writer.println("" + stack.size());
+                    //if (log) writer.println("" + stack.size());
 
                     if (stack.size() > 0) {
                         si = stack.getFirst();
                         si.l.addLast(r);
                         si.p = si.p.cdr;
                     } else {
-                        if (log) writer.close();
+                    //    if (log) writer.close();
                         //io.out(true, "max stack size = " + maxstacksize);
-                        Main.maxstacksize = maxstacksize;
+                        //Main.maxstacksize = maxstacksize;
                         return r;
                     }
                 }

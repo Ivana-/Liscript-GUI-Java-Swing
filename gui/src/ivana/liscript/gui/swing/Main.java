@@ -1,4 +1,6 @@
-package com.company;
+package ivana.liscript.gui.swing;
+
+import ivana.liscript.core.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -326,7 +328,7 @@ public class Main extends JFrame {
         getContentPane().add(buttonsPanel, BorderLayout.NORTH);
 
         //this.setBounds(100, 100, 500, 400);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
     protected ImageIcon createImageIcon(String path, String description) {
@@ -424,7 +426,7 @@ public class Main extends JFrame {
                 if (checkBoxShowEvalTime.isSelected())
                     pane.out(true, "" + String.format("%.5f", time/1.E9) + " сек");
 
-                } catch (Throwable e) {
+            } catch (Throwable e) {
                 Thread.currentThread().interrupt();
                 //pane.out(true, e.getLocalizedMessage());
                 pane.out(true, e.toString());

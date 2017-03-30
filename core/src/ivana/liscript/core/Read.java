@@ -1,6 +1,6 @@
-package com.company;
+package ivana.liscript.core;
 
-import com.company.Eval.ConsList;
+import ivana.liscript.core.Eval.ConsList;
 
 import java.util.LinkedList;
 
@@ -14,7 +14,7 @@ public class Read {
     }
 
     public static LinkedList<String> tokens(String s) {
-        LinkedList<String> r = new LinkedList<String>();
+        LinkedList<String> r = new LinkedList<>();
 
         int STATE_TOKEN = 0, STATE_STRING = 2, STATE_COMMENT = 3;
         int state = STATE_TOKEN;
@@ -72,7 +72,7 @@ public class Read {
         else if (t.equals("true")) return true;
         else if (t.equals("false")) return false;
 
-        else if (t.equals("Main.application")) return Main.application;
+        //else if (t.equals("Main.application")) return Main.application;
 
         else
             try {return Integer.parseInt(t);} //Integer.valueOf(t);

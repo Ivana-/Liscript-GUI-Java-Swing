@@ -1,13 +1,15 @@
-package com.company;
+package ivana.liscript.gui.swing;
+
+import ivana.liscript.core.Eval;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class GuiButton extends JButton {
-    private com.company.Eval.ConsList liscriptCode;
+    private Eval.ConsList liscriptCode;
 
-    public void setLambda(com.company.Eval.Func lambda) {
+    public void setLambda(ivana.liscript.core.Eval.Func lambda) {
         liscriptCode = new Eval.ConsList(lambda, Eval.emptyList);
 
         this.addActionListener(new ActionListener() {
