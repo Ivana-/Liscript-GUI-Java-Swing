@@ -7,10 +7,13 @@
 Примеры внешнего вида графического интерфейса:
 
 Текстовый REPL
-![alt text](https://cloud.githubusercontent.com/assets/10473034/24527911/f856e1d8-15ac-11e7-988b-5e32f70dd892.png "Text REPL")
+
+![alt text](https://cloud.githubusercontent.com/assets/10473034/24529995/c2a31aba-15b7-11e7-91f0-e1914c970e97.png "Text REPL")
 
 Графика - прыгающие мячики
-![alt text](https://cloud.githubusercontent.com/assets/10473034/24527921/ffaf4bfa-15ac-11e7-8338-599d408077bf.png "Demo graphics - Bouncing balls")
+
+![alt text](https://cloud.githubusercontent.com/assets/10473034/24530004/c757e842-15b7-11e7-866d-e490c49da6a8.png "Demo graphics - Bouncing balls")
 
 Графика - Тетрис
-![alt text](https://cloud.githubusercontent.com/assets/10473034/24527928/046062ec-15ad-11e7-92cd-ab28b9b19ccf.png "Demo graphics - Tetris game")
+
+![alt text](https://cloud.githubusercontent.com/assets/10473034/24530008/ca91ecce-15b7-11e7-9652-e0ee462da972.png "Demo graphics - Tetris game")
