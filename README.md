@@ -4,9 +4,11 @@
 
 Файлы с расширением liscript в папке demo и снаружи - текстовые файлы в кодировке UTF-8 - тескты скриптов, которые можно загружать в интерпретатор. В первых двух демо-файлах описание интерфейса программы и собственно языка, в остальных - демо примеры различных задачек.
 
-## [Страница с готовыми для скачивания релизами](https://github.com/Ivana-/Liscript-GUI-Java-Swing/releases/ "Releases page")
+### [Релизы для скачивания](https://github.com/Ivana-/Liscript-GUI-Java-Swing/releases/ "Releases page")
 
-## Примеры внешнего вида графического интерфейса
+### [Краткое описание языка](https://github.com/Ivana-/Liscript-GUI-Java-Swing/wiki/Liscript-short-overview "Liscript short overview page")
+
+### Примеры внешнего вида графического интерфейса
 
 Текстовый REPL:
  
