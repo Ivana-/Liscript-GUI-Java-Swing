@@ -14,7 +14,9 @@ public class Main implements Eval.InOutable {
 
     private static String readFileToString (String fileAbsolutePath) throws IOException {
         byte[] fileBytes = Files.readAllBytes(Paths.get(fileAbsolutePath));
-        return new String(fileBytes, StandardCharsets.UTF_8);
+        String r = new String(fileBytes, StandardCharsets.UTF_8);
+        return r.replace("\uFEFF", "");
+//        return Files.readString(Paths.get(fileAbsolutePath), StandardCharsets.UTF_8); needs Java 11+
     }
 
     private void loadFile (String fileName) {

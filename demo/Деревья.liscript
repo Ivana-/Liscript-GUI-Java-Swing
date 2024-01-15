@@ -1,28 +1,5 @@
-; Дерево ;
-
-(defmacro sin (x) (java (class "java.lang.Math") "sin" x))
-(defmacro cos (x) (java (class "java.lang.Math") "cos" x))
-(defmacro rnd () (java (class "java.lang.Math") "random"))
-(defmacro rand (a b) (+ a (* (- b a) (rnd))))
-(defmacro round (x) (java x "intValue"))
-(defmacro color (r g b) (java (class "java.awt.Color") "new" r g b))
-
-(def pi 3.1415926535897932384626433832)
-
-(defmacro add-image (window image)
-    (def icon (java (class "javax.swing.ImageIcon") "new"))
-    (java icon "setImage" image)
-    (def label (java (class "javax.swing.JLabel") "new"))
-    (java label "setIcon" icon)
-    (java window "add" label))
-
+; Деревья ;
 (defmacro grad (x) (round (* 180 (/ x pi))))
-
-(def BLACK (color 0 0 0))
-(def WHITE (color 255 255 255))
-(def RED (color 255 0 0))
-(def GREEN (color 0 255 0))
-(def BROWN (color 150 75 0))
 
 (defn tree (graph n x y d d0 l v i)
     (def x1 (round (+ x (* l (cos d)))) y1 (round (+ y (* l (sin d)))))
@@ -60,4 +37,4 @@
 (java window "setVisible" true)
 ;(java window "pack");
 (java window "setBounds" 10 10 (+ 50 (* 3 w-s)) (+ 60 (* 2 w-s)))
-"Дерево"
+"Деревья"

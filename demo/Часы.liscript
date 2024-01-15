@@ -1,29 +1,22 @@
 (defn show-timer ()
-
-    (defmacro toString (s) (java s 'toString))
-
     (defmacro calendar () (java (class 'java.util.Calendar) 'getInstance))
-
-    (def dateFormat (java (class 'java.text.SimpleDateFormat) "new"
-        (toString "HH:mm:ss")))
-
+    (def dateFormat (java (class 'java.text.SimpleDateFormat) "new" "HH:mm:ss"))
     (defmacro get-time () (java dateFormat 'format (java (calendar) 'getTime)))
 
     (def label (java (class 'javax.swing.JLabel) "new"))
-    (java label 'setText (toString " hh:mm:ss "))
-    (def font (java (class 'java.awt.Font) "new" (toString "Tahoma") 1 60))
-    (java label 'setFont font)
-    (java label 'setForeground (java (class 'java.awt.Color) "new" 255 0 0))
+    (java label 'setFont (java (class 'java.awt.Font) "new" "Tahoma" 1 60))
+    (java label 'setForeground (RGB 255 0 0))
+    (java label 'setText " hh:mm:ss ")
 
     (defn update-time ()
         (java label 'setText (get-time))
-        (java (class 'java.lang.Thread) 'sleep 1000)
+        (thread-sleep 1000)
         (update-time))
 
-    (def window (java (class 'javax.swing.JFrame) "new"))
-    (java window 'setLayout (java (class 'java.awt.FlowLayout) "new"))
+    (def window (new-window "FlowLayout"))
     (java window 'add label)
     (java window 'setVisible true)
+    (java window 'setAlwaysOnTop true)
     (java window 'pack)
 
     (update-time))

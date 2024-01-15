@@ -27,7 +27,7 @@ public class SyntaxHighlighter implements DocumentListener {
     static SimpleAttributeSet styleEnvBounds = new SimpleAttributeSet();
     static SimpleAttributeSet styleKeyWord = new SimpleAttributeSet();
 
-    SyntaxHighlighter(JTextComponent _textComponent) {textComponent = _textComponent;}
+    SyntaxHighlighter(JTextComponent _textComponent) { textComponent = _textComponent; }
 
     public static void makeStyle(SimpleAttributeSet style,
             Color foreground, boolean bold, boolean underline, boolean italic) {
@@ -54,6 +54,7 @@ public class SyntaxHighlighter implements DocumentListener {
         //keyWordStyles.put("true",       styleBoolean);
         //keyWordStyles.put("false",      styleBoolean);
 
+        booleanKeyWords = new HashSet<>();
         booleanKeyWords.add("true");
         booleanKeyWords.add("false");
     }
@@ -68,9 +69,7 @@ public class SyntaxHighlighter implements DocumentListener {
         //beenModified = true;
         documentEvent = e;
 
-    Runnable doRunnableHighlight = new Runnable() {
-        @Override
-        public void run() {
+        Runnable doRunnableHighlight = () -> {
             DefaultStyledDocument doc = (DefaultStyledDocument) documentEvent.getDocument();
             try {
                 int offset = documentEvent.getOffset();
@@ -78,30 +77,27 @@ public class SyntaxHighlighter implements DocumentListener {
                 makeStyle(styleEmpty, textComponent.getForeground(), false, false, false);
 
                 // add close paren ) or "
-                /*
-                if (documentEvent.getType() == DocumentEvent.EventType.INSERT
-                        && documentEvent.getLength() == 1) {
-                    char c = doc.getText(offset, 1).charAt(0);
-                    if (c == '(' || c == '"') {
-                        doc.insertString(offset + 1, c == '(' ? ")" : "\"", null);
-                        textComponent.setCaretPosition(offset + 1);
-                    }
+            /*
+            if (documentEvent.getType() == DocumentEvent.EventType.INSERT
+                    && documentEvent.getLength() == 1) {
+                char c = doc.getText(offset, 1).charAt(0);
+                if (c == '(' || c == '"') {
+                    doc.insertString(offset + 1, c == '(' ? ")" : "\"", null);
+                    textComponent.setCaretPosition(offset + 1);
                 }
-                */
+            }
+            */
 
                 // determine start and end offsets where needed to reset attributes
                 int ifrom = doc.getParagraphElement(offset).getStartOffset(), ito;
-
-                // toDelete
-                //ifrom = 0;
-
-
 
                 if (documentEvent.getType() == DocumentEvent.EventType.INSERT)
                     ito = doc.getParagraphElement(offset
                             + documentEvent.getLength()).getEndOffset();
                 else
                     ito = doc.getParagraphElement(offset).getEndOffset();
+
+//                System.out.println("Highlight " + ifrom + " - " + ito + " (" + doc.getLength() + ")");
 
                 // set attributes in determined interval
                 int STATE_TOKEN = 0, STATE_UTIL = 1, STATE_STRING = 2, STATE_COMMENT = 3;
@@ -112,32 +108,36 @@ public class SyntaxHighlighter implements DocumentListener {
                     char c = i < ito ? doc.getText(i, 1).charAt(0) : 0;
 
                     if (state == STATE_STRING &&
-                            (c == '"' || c == '\n' || c == 0)) {
+                            (c == '"'
+//                                    || c == '\n'
+                                    || c == 0)) {
                         SimpleAttributeSet style = c == '"' ? styleString : styleStringError;
                         doc.setCharacterAttributes(ib, i - ib + 1, style, replace);
                         ib = i + 1;
                         state = STATE_TOKEN;
                     }
                     else if (state == STATE_COMMENT &&
-                            (c == ';' || c == '\n' || c == 0)) {
+                            (c == ';'
+//                                    || c == '\n'
+                                    || c == 0)) {
                         doc.setCharacterAttributes(ib, i - ib + 1, styleComment, replace);
                         ib = i + 1;
                         state = STATE_TOKEN;
                     }
                     else if (state == STATE_TOKEN &&
-                                (c == '(' || c == ')'  || c == '"' || c == ';'
-                                        || c == 0 || Character.isWhitespace(c))) {
+                            (c == '(' || c == ')'  || c == '"' || c == ';'
+                                    || c == 0 || Character.isWhitespace(c))) {
                         String word = doc.getText(ib, i - ib);
                         SimpleAttributeSet style;
                         try {
-                            double test = Double.parseDouble(word);
+                            double test = Double.parseDouble(word); // needs for check if word is number!
                             style = styleNumber;
                         } catch (NumberFormatException errorDouble) {
                             style = Main.globalEnv.isBounded(word) ? styleEnvBounds :
                                     //keyWordStyles.containsKey(word) ? keyWordStyles.get(word) :
                                     booleanKeyWords.contains(word) ? styleBoolean :
-                                    Eval.specialFormWords.containsKey(word) ? styleKeyWord :
-                                    styleEmpty;
+                                            Eval.specialFormWords.containsKey(word) ? styleKeyWord :
+                                                    styleEmpty;
                         }
                         doc.setCharacterAttributes(ib, i - ib, style, replace);
                         state = c == '"' ? STATE_STRING :
@@ -155,8 +155,7 @@ public class SyntaxHighlighter implements DocumentListener {
             } catch (BadLocationException ex) {throw new Error(ex);}
 
             beenModified = false;
-        }
-    };
+        };
 
         SwingUtilities.invokeLater(doRunnableHighlight);
     }

@@ -1,4 +1,4 @@
-﻿; страшные макросы - defmacro и defn через него уже ;
+﻿; scary macros - defmacro and defn through it already ;
 (def defmacro (macro (name args body) (def name (macro args body))))
 ; (def defn (macro (name args body) (def name (lambda args body)))) ;
 (defmacro defn (name args body) (def name (lambda args body)))
@@ -40,6 +40,7 @@
 (defmacro or  (x y) (cond x true y))
 (defmacro xor (x y) (cond (eq? x y) false true))
 (defn abs (x) cond (> 0 x) (- 0 x) x)
+(defn min (x y) cond (< x y) x y)
 (defn id (x) x)
 
 (defmacro cadr (l) (car (cdr l)))
@@ -114,6 +115,12 @@
 (defn any (f l) (cond (null? l) false (f (car l)) true (any f (cdr l))))
 (defn all (f l) (cond (null? l) true (f (car l)) (all f (cdr l)) false))
 
+(defn elem-index (e l)
+    (defn go (l i) cond (null? l) -1 (eq? e (car l)) i (go (cdr l) (+ 1 i)))
+    (go l 0))
+
+(defn last (l) cond (null? (cdr l)) (car l) (last (cdr l)) )
+
 (defn span (f l)
     (defn go (l1 l2)
         (cond (null? l2)   (cons (reverse l1) (cons l2 nil))
@@ -167,166 +174,51 @@
                  (cons (car l) (sort (filter (lambda (x) >= x (car l)) (cdr l))))))
 
 
-; Функции и макросы работы с графикой ;
+; service functions / macros ;
 
+; https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#sleep-long-int- ;
+(defmacro thread-sleep (msec) (java (class 'java.lang.Thread) 'sleep msec 0))
+
+(def pi 3.1415926535897932384626433832)
+
+(defmacro sin (x) (java (class "java.lang.Math") "sin" x))
+(defmacro cos (x) (java (class "java.lang.Math") "cos" x))
+(defmacro rnd ()  (java (class "java.lang.Math") "random"))
+(defmacro rand (a b) (+ a (* (- b a) (rnd))))
+(defmacro round (x) (java x "intValue"))
+
+(defmacro RGB (r g b) (java (class "java.awt.Color") "new" r g b))
+
+(def BLACK (RGB 0 0 0))
+(def WHITE (RGB 255 255 255))
+(def RED (RGB 255 0 0))
+(def GREEN (RGB 0 255 0))
+(def BLUE (RGB 0 0 255))
+(def BROWN (RGB 150 75 0))
+
+; functions and macros of working with graphics ;
 
 (defn new-window (layout)
     (def window (java (class "javax.swing.JFrame") "new"))
     (java window "setLayout" (java (class (++ "java.awt." layout)) "new"))
     window)
 
-(defmacro add-image (window image)
+(defn add-image (window image)
     (def icon (java (class "javax.swing.ImageIcon") "new"))
     (java icon "setImage" image)
     (def label (java (class "javax.swing.JLabel") "new"))
     (java label "setIcon" icon)
-    (java window "add" label))
+    (java window "add" label)
+ 	label)
 
 (defmacro new-image (width height) (java (class "java.awt.image.BufferedImage") "new" width height 1))
 
 (defmacro new-imageGraphics (image) (java image "createGraphics"))
 
-
-
-
-
-(def Math.sin (method (class "java.lang.Math") "sin" "double"))
-(def Math.cos (method (class "java.lang.Math") "cos" "double"))
-
-(def HashMap.put (method (class "java.util.HashMap") "put" "java.lang.Object" "java.lang.Object"))
-
-(def HashMap.get (method (class "java.util.HashMap") "get" "java.lang.Object"))
-
-(def HashMap.remove (method (class "java.util.HashMap") "remove" "java.lang.Object"))
-
 (def showMessageDialog (method (class "javax.swing.JOptionPane")
             "showMessageDialog" "java.awt.Component" "java.lang.Object"))
 
-;(def action (new (class "jtools.reflect.CommandAction")));
-;
-(def fr (new (class "javax.swing.JFrame")))
-
-(java fr "setLayout" (new (class "java.awt.FlowLayout")))
-
-(def button (new (class "javax.swing.JButton")))
-(java button "setText" (java "Test" "toString"))
-
-(def text (new (class "javax.swing.JTextField")))
-
-(def dim (new (class "java.awt.Dimension"))) (java dim "setSize" 100 30)
-
-(def contentPane (java fr "getContentPane"))
-
-(def textComponent (java text "castComponent"))
-(java textComponent "setPreferredSize" dim)
-
-(java fr "add" textComponent)   (java "North" "toString"))
-
-(java fr "add" (java button "castComponent") )
-
-(def gr (class "java.awt.Graphics"))
-(java (class "java.awt.Graphics") "drawLine" 100 100 300 300)
-
-(def drawLine (method (class "java.awt.Graphics") "drawLine" "int" "int" "int" "int"))
-
-(def graphics (java contentPane "getGraphics"))
-
-(def graphics (java contentPane "getGraphics"))
-
-(drawLine graphics 10 10 300 300)
-
-(java graphics "drawLine" 10 10 300 300)
-
-(java contentPane "update" graphics)
-(java window "setBounds" 100 100 500 400)
-(java window "setLayout" (java (class "java.awt.FlowLayout") "new"))
-
-
-
-
-(defmacro v-s () (java (* window-size (java (class "java.lang.Math") "random")) "intValue"))
-(defn random-line (p)
-    (def x (v-s) y (v-s))
-    (java imageGraphics "drawLine" (car p) (cadr p) x y)
-    (cons x y))
-
-
-(defmacro show (image)
-    (def icon (java (class "javax.swing.ImageIcon") "new"))
-    (java icon "setImage" image)
-    (def label (java (class "javax.swing.JLabel") "new"))
-    (java label "setIcon" icon)
-
-    (def window (java (class "javax.swing.JFrame") "new"))
-    (java window "add" label)
-    (java window "setVisible" true)
-    (java window "pack") )
-
-(defmacro add-image (window image)
-    (def icon (java (class "javax.swing.ImageIcon") "new"))
-    (java icon "setImage" image)
-    (def label (java (class "javax.swing.JLabel") "new"))
-    (java label "setIcon" icon)
-    (java window "add" label))
-
-(defmacro sin (x) (java (class "java.lang.Math") "sin" x))
-(defmacro cos (x) (java (class "java.lang.Math") "cos" x))
-(defmacro color (r g b) (java (class "java.awt.Color") "new" r g b))
-
-(def w-s 320 w-s-half (/ w-s 2))
-(defmacro norm (x) (+ w-s-half (java (* x w-s-half) "intValue") ))
-
-(def drawString (method (class "sun.java2d.SunGraphics2D") "drawString" "java.lang.String" "int" "int"))
-
-(defmacro draw-string (ig s x y) (drawString ig (java s "toString") x y))
-
-
-(defn demo (delta a b phi color)
-    (def image (java (class "java.awt.image.BufferedImage") "new" w-s w-s 1))
-    (def imageGraphics (java image "createGraphics"))
-
-    (java imageGraphics "setBackground" (java (class "java.awt.Color") "new" 255 255 255))
-    (java imageGraphics "clearRect" 0 0 w-s w-s)
-
-    (java imageGraphics "setColor" color)
-    (java imageGraphics "setFont"
-        (java (class "java.awt.Font") "new" (java "TimesRoman" "toString") 0 10))
-    (drawString imageGraphics (java "12345" "toString") 10 10)
-
-    (defmacro p-x (alpha) (norm (sin (+ (* a alpha) phi))))
-    (defmacro p-y (alpha) (norm (cos (* b alpha))))
-
-    (defn next-line (args)
-        (match args '(alpha x0 y0))
-        (def x (p-x alpha) y (p-y alpha))
-        (java imageGraphics "drawLine" x0 (- w-s y0) x (- w-s y))
-        (cons (+ alpha delta) x y))
-
-    (ntimes 5 next-line (cons 0 (p-x 0) (p-y 0)))
-    (show image))
-
-(demo 2.5 1 1 0   (color 255 0 0))
-;
-;
-(demo 2   2 1 0   (color 0 255 0))
-(demo 2   1 2 0.3 (color 0 0 255))
-(demo 1   1 3 0.5 (color 255 255 0))
-(demo 1   3 1 0.5 (color 192 192 192))
-(demo 0.6 3 2 0.5 (color 0 0 122))
-
-(def window (java (class "javax.swing.JFrame") "new"))
-(java window "setLayout" (java (class "java.awt.FlowLayout") "new"))
-(java window "setVisible" true)
-(java window "pack")
-;
-
+;(defn to-Array (l) (java (foldl (lambda (x a) (java a "add" x)) (java (class "java.util.ArrayList") "new") l) "toArray"));
 
 "Стандартная библиотека успешно загружена.
-
-Для ознакомления с возможностями интерпретатора и языка загрузите (крайняя левая кнопка на панели инструментов выше этого текста) демо-файлы (находятся в папке 'demo' рядом с исполняемым файлом):
-
-01_interpreter_basics.liscript - описание программы-интерпретатора
-02_liscript_basics.liscript - описание языка
-или прочие демо-файлы
-
-Когда надоест эта длинная надпись - измените ее в конце файла библиотеки standard_library.liscript в папке рядом с исполняемым файлом."
+"

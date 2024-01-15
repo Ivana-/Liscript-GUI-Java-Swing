@@ -139,7 +139,7 @@
     (cond (try-move (cons t o (- r 1) c)) (fall-down)))
 
 (defn timer-thread ()
-    (java (class "java.lang.Thread") "sleep" 1000)
+    (thread-sleep 1000)
     (match item '(t o r c))
     (cond game-run
         (cond (not (try-move (cons t o (- r 1) c))) (

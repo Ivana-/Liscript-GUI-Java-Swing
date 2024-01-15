@@ -1,6 +1,7 @@
 package ivana.liscript.gui.swing;
 
 import ivana.liscript.core.Eval;
+import ivana.liscript.core.Read;
 import ivana.liscript.gui.swing.Main.InterThread;
 
 import javax.swing.*;
@@ -15,42 +16,40 @@ import java.util.HashMap;
 
 public class WorkPanel extends JPanel implements Eval.InOutable {
 
-    public JTextArea textArea;
-    public JTextPane textAreaIn;
-    public JTextPane editPane;
+    public JTextArea outputPane;
+    public JTextPane inputPane, editPane;
 
-    public JLabel lastLoadFileNameLabel;
-    public JLabel lastOpenFileNameLabel;
-    //public JCheckBox cleartextAreaIn;
+    public JLabel lastLoadFileNameLabel, lastOpenFileNameLabel;
+    //public JCheckBox clearinputPane;
 
-    public static HashMap<String, Object> styleTextArea = new HashMap<>();
-    public static HashMap<String, Object> styleTextAreaIn = new HashMap<>();
+    public static HashMap<String, Object> styleOutputPane = new HashMap<>();
+    public static HashMap<String, Object> styleInputPane = new HashMap<>();
     public static HashMap<String, Object> styleEditPane = new HashMap<>();
-    public static Color textAreaIn_BackgroundIn;
+    public static Color inputPane_BackgroundIn;
 
     public static void setDefaultStyle(HashMap<String, Object> s) {
-        HashMap<String, Object> style = new HashMap<>();
-        s.put("font", new Font("Monospaced", Font.PLAIN, 12));
+        s.put("font", new Font("Monospaced", Font.PLAIN, 20));
         s.put("foreground", Color.black);
         s.put("background", Color.white);
         s.put("caretColor", Color.black);
     }
     public static void setDefaultSettings() {
-        setDefaultStyle(styleTextArea);
-        setDefaultStyle(styleTextAreaIn);
+        setDefaultStyle(styleOutputPane);
+        setDefaultStyle(styleInputPane);
         setDefaultStyle(styleEditPane);
-        textAreaIn_BackgroundIn = new Color(255, 237, 197);
+        inputPane_BackgroundIn = new Color(255, 237, 197);
     }
 
-    public InterThread thread = null;
-    public volatile boolean isCin = false;
-    public String cinString = "";
+    public InterThread thread;
+    public volatile boolean isCin;
+    public String cinString;
 
     ArrayList<String> inputStrings;
     int inputStringsIndex;
 
     Action sendUserInputAction, restoreUserInputAction,
-            sendEditPaneInputAction, interruptAction;
+            sendEditPaneInputAction, interruptAction,
+            formatUserInputAction, formatEditPaneInputAction;
 
     WorkPanel() {
         //super(JSplitPane.VERTICAL_SPLIT);
@@ -60,7 +59,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         //WorkPanel thisPane = this;
         lastLoadFileNameLabel = new JLabel();
         lastOpenFileNameLabel = new JLabel();
-        //cleartextAreaIn = new JCheckBox();
+        //clearinputPane = new JCheckBox();
 
         inputStrings = new ArrayList<>();
         inputStringsIndex = 0;
@@ -75,29 +74,29 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
 
         //--------------------------------------
 
-        textArea = new JTextArea(5, 30);
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-        //textArea.setFont(textPaneFont);
-        //textArea.setEditable(false);
-        textArea.addCaretListener(new BracketMatcher());
+        outputPane = new JTextArea(5, 30);
+        outputPane.setLineWrap(true);
+        outputPane.setWrapStyleWord(true);
+        //outputPane.setFont(textPaneFont);
+        //outputPane.setEditable(false);
+        outputPane.addCaretListener(new BracketMatcher());
 
         /*
-        DefaultStyledDocument doctextArea = new DefaultStyledDocument();
-        textArea = new JTextPane(doctextArea);
+        DefaultStyledDocument docoutputPane = new DefaultStyledDocument();
+        outputPane = new JTextPane(docoutputPane);
 
-        //textArea.setContentType("text/html");
+        //outputPane.setContentType("text/html");
 
-        textArea.setFont(textPaneFont);
-        //textAreaIn.setParagraphAttributes(textPanestyle, false);
-        //textAreaIn.setCaret(c);
-        //textAreaIn.setBackground(Color.black);
-        textArea.addCaretListener(new BracketMatcher());
-        doctextArea.addDocumentListener(new SyntaxHighlighter(textArea));
+        outputPane.setFont(textPaneFont);
+        //inputPane.setParagraphAttributes(textPanestyle, false);
+        //inputPane.setCaret(c);
+        //inputPane.setBackground(Color.black);
+        outputPane.addCaretListener(new BracketMatcher());
+        docoutputPane.addDocumentListener(new SyntaxHighlighter(outputPane));
         */
 
 
-        JScrollPane scrollPane = new JScrollPane(textArea);
+        JScrollPane scrollPane = new JScrollPane(outputPane);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
         //--------------------------------------
@@ -110,34 +109,41 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         //Caret c = new DefaultCaret();
         //c.setBlinkRate(0);
 
-        //final StyleContext sctextAreaIn = new StyleContext();
-        //final DefaultStyledDocument doctextAreaIn = new DefaultStyledDocument(sctextAreaIn);
-        DefaultStyledDocument doctextAreaIn = new DefaultStyledDocument();
-        textAreaIn = new JTextPane(doctextAreaIn);
-        //textAreaIn.setFont(textPaneFont);
-        //textAreaIn.setParagraphAttributes(textPanestyle, false);
-        //textAreaIn.setCaret(c);
-        //textAreaIn.setBackground(Color.black);
-        textAreaIn.addCaretListener(new BracketMatcher());
-        doctextAreaIn.addDocumentListener(new SyntaxHighlighter(textAreaIn));
+        //final StyleContext scinputPane = new StyleContext();
+        //final DefaultStyledDocument docinputPane = new DefaultStyledDocument(scinputPane);
+        DefaultStyledDocument docinputPane = new DefaultStyledDocument();
+        inputPane = new JTextPane(docinputPane);
+        inputPane.setFocusTraversalKeysEnabled(false);
+        //inputPane.setFont(textPaneFont);
+        //inputPane.setParagraphAttributes(textPanestyle, false);
+        //inputPane.setCaret(c);
+        //inputPane.setBackground(Color.black);
+        inputPane.addCaretListener(new BracketMatcher());
+        docinputPane.addDocumentListener(new SyntaxHighlighter(inputPane));
 
-        JScrollPane scrollPaneIn = new JScrollPane(textAreaIn);
+        JScrollPane scrollPaneIn = new JScrollPane(inputPane);
         scrollPaneIn.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
-        textAreaIn.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.CTRL_MASK),
+        inputPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.CTRL_DOWN_MASK),
                         "sendUserInputAction");
-        textAreaIn.getActionMap().put("sendUserInputAction", sendUserInputAction);
+        inputPane.getActionMap().put("sendUserInputAction", sendUserInputAction);
 
-        textAreaIn.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_MASK)
+        inputPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK)
                         , "restoreUserInputAction");
-        textAreaIn.getActionMap().put("restoreUserInputAction", restoreUserInputAction);
+        inputPane.getActionMap().put("restoreUserInputAction", restoreUserInputAction);
+
+        inputPane.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)
+                        , "formatUserInputAction");
+        inputPane.getActionMap().put("formatUserInputAction", formatUserInputAction);
 
         //--------------------------------------
 
         DefaultStyledDocument docEditPane = new DefaultStyledDocument();
         editPane = new JTextPane(docEditPane);
+        editPane.setFocusTraversalKeysEnabled(false);
         //editPane.setFont(textPaneFont);
         //editPane.setParagraphAttributes(textPanestyle, false);
         //editPane.setCaret(c);
@@ -148,11 +154,15 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         JScrollPane scrollEditPane = new JScrollPane(editPane);
         scrollEditPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-        int krpiyu = KeyEvent.VK_F1;
         editPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(krpiyu, InputEvent.CTRL_MASK)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, InputEvent.CTRL_DOWN_MASK)
                         , "sendEditPaneInputAction");
         editPane.getActionMap().put("sendEditPaneInputAction", sendEditPaneInputAction);
+
+        editPane.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)
+                        , "formatEditPaneInputAction");
+        editPane.getActionMap().put("formatEditPaneInputAction", formatEditPaneInputAction);
 
         //--------------------------------------
 
@@ -161,12 +171,12 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         JSplitPane splitPaneREPL = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPaneREPL.add(scrollPane);
         splitPaneREPL.add(scrollPaneIn);
-        splitPaneREPL.setDividerLocation(wa.height - 200);
+        splitPaneREPL.setDividerLocation((int)(wa.height * 0.7));
 
         JSplitPane splitPaneAll = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPaneAll.add(splitPaneREPL);
         splitPaneAll.add(scrollEditPane);
-        splitPaneAll.setDividerLocation(wa.width - 100);
+        splitPaneAll.setDividerLocation((int)(wa.width * 0.8));
 
         this.add(splitPaneAll, BorderLayout.CENTER);
 
@@ -176,7 +186,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         //this.add(lastLoadFileNameLabel, BorderLayout.SOUTH);
         this.add(labelsPanel, BorderLayout.SOUTH);
 
-        //this.add(cleartextAreaIn, BorderLayout.WEST);
+        //this.add(clearinputPane, BorderLayout.WEST);
         this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "interruptAction");
         this.getActionMap().put("interruptAction", interruptAction);
@@ -185,14 +195,29 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
         applySettings();
     }
 
+    private static void formatTextPane (JTextPane textPane) {
+        final String text = textPane.getText().trim();
+        final String formattedText = Read.prettyPrint(text);
+        final int cp = Math.min(textPane.getCaretPosition(), formattedText.length());
+
+        Runnable doIt = () -> {
+            textPane.setText("");
+            try {
+                textPane.getStyledDocument().insertString(0, formattedText, null);
+                textPane.setCaretPosition(cp);
+            } catch (BadLocationException ex) {}
+        };
+        if (SwingUtilities.isEventDispatchThread()) doIt.run(); else SwingUtilities.invokeLater(doIt);
+    }
+
     private void setActions() {
         WorkPanel thisPane = this;
 
         sendUserInputAction = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //String input = textAreaIn.getText().trim();
-                String input = textAreaIn.getText();
+                //String input = inputPane.getText().trim();
+                String input = inputPane.getText();
 
                 if (isCin) {
                     cinString = input;
@@ -210,13 +235,9 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
                 }
 
                 if (SwingUtilities.isEventDispatchThread()) {
-                    textAreaIn.setText("");
+                    inputPane.setText("");
                 } else {
-                    SwingUtilities.invokeLater(new Runnable() {
-                        public void run() {
-                            textAreaIn.setText("");
-                        }
-                    });
+                    SwingUtilities.invokeLater(() -> inputPane.setText(""));
                 }
             }
         };
@@ -232,15 +253,13 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
                 String s = inputStrings.get(inputStringsIndex);
                 inputStringsIndex += 1;
 
-                Runnable doIt = new Runnable() {
-                    public void run() {
-                        textAreaIn.setText("");
-                        try {
-                            textAreaIn.getStyledDocument().insertString(0, s, null);
-                        } catch (BadLocationException ex) {}
-                    }};
-                if (SwingUtilities.isEventDispatchThread()) doIt.run();
-                else SwingUtilities.invokeLater(doIt);
+                Runnable doIt = () -> {
+                    inputPane.setText("");
+                    try {
+                        inputPane.getStyledDocument().insertString(0, s, null);
+                    } catch (BadLocationException ex) {}
+                };
+                if (SwingUtilities.isEventDispatchThread()) doIt.run(); else SwingUtilities.invokeLater(doIt);
             }
         };
 
@@ -257,33 +276,45 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (thread == null) return;
-                out(true, "interrupt");
+                out(true, "interrupt " + thread.getName());
                 thread.interrupt();
-                out(true, thread.getName());
+            }
+        };
+
+        formatUserInputAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                formatTextPane (inputPane);
+            }
+        };
+        formatEditPaneInputAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                formatTextPane (editPane);
             }
         };
     }
 
     public void applySettings() {
 
-        textArea.setFont((Font) styleTextArea.get("font"));
-        textArea.setForeground((Color) styleTextArea.get("foreground"));
-        textArea.setBackground((Color) styleTextArea.get("background"));
-        textArea.setCaretColor((Color) styleTextArea.get("caretColor"));
+        outputPane.setFont((Font) styleOutputPane.get("font"));
+        outputPane.setForeground((Color) styleOutputPane.get("foreground"));
+        outputPane.setBackground((Color) styleOutputPane.get("background"));
+        outputPane.setCaretColor((Color) styleOutputPane.get("caretColor"));
 
-        textAreaIn.setFont((Font) styleTextAreaIn.get("font"));
-        textAreaIn.setForeground((Color) styleTextAreaIn.get("foreground"));
-        textAreaIn.setBackground((Color) styleTextAreaIn.get("background"));
-        textAreaIn.setCaretColor((Color) styleTextArea.get("caretColor"));
+        inputPane.setFont((Font) styleInputPane.get("font"));
+        inputPane.setForeground((Color) styleInputPane.get("foreground"));
+        inputPane.setBackground((Color) styleInputPane.get("background"));
+        inputPane.setCaretColor((Color) styleInputPane.get("caretColor"));
 
         editPane.setFont((Font) styleEditPane.get("font"));
         editPane.setForeground((Color) styleEditPane.get("foreground"));
         editPane.setBackground((Color) styleEditPane.get("background"));
-        editPane.setCaretColor((Color) styleTextArea.get("caretColor"));
+        editPane.setCaretColor((Color) styleEditPane.get("caretColor"));
 
-        String s = textAreaIn.getText();
-        textAreaIn.selectAll();
-        textAreaIn.replaceSelection(s);
+        String s = inputPane.getText();
+        inputPane.selectAll();
+        inputPane.replaceSelection(s);
 
         s = editPane.getText();
         editPane.selectAll();
@@ -294,26 +325,24 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
     public void out(boolean ln, String s) {
         if (s == null) return;
 
-        Runnable doIt = new Runnable() {
-            public void run() {
+        Runnable doIt = () -> {
 
-                textArea.append(s);
-                if (ln) textArea.append("\n");
-                /*
-                try {
-                    textArea.getDocument().insertString(
-                            textArea.getDocument().getLength(), s, null);
-                    if (ln) textArea.getDocument().insertString(
-                            textArea.getDocument().getLength(), "\n", null);
+            outputPane.append(s);
+            if (ln) outputPane.append("\n");
+            /*
+            try {
+                outputPane.getDocument().insertString(
+                        outputPane.getDocument().getLength(), s, null);
+                if (ln) outputPane.getDocument().insertString(
+                        outputPane.getDocument().getLength(), "\n", null);
 
-                } catch (BadLocationException ex) {}
-                */
+            } catch (BadLocationException ex) {}
+            */
 
-                textArea.setCaretPosition(textArea.getDocument().getLength());
-            }};
+            outputPane.setCaretPosition(outputPane.getDocument().getLength());
+        };
 
-        if (SwingUtilities.isEventDispatchThread()) doIt.run();
-        else SwingUtilities.invokeLater(doIt);
+        if (SwingUtilities.isEventDispatchThread()) doIt.run(); else SwingUtilities.invokeLater(doIt);
     }
 
     @Override
@@ -328,7 +357,7 @@ public class WorkPanel extends JPanel implements Eval.InOutable {
             if (Thread.currentThread().isInterrupted()) {
                 isCin = false;
                 Thread.currentThread().interrupt();
-                throw new RuntimeException("interrupted lalalala.....");
+                throw new RuntimeException();
                 //break;
             }
         }

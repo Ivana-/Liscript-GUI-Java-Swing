@@ -9,7 +9,7 @@
 (add-image w img)
 
 (def PAUSE false)
-(defn pause () cond PAUSE ((java (class "java.lang.Thread") "sleep" 50) (pause)))
+(defn pause () cond PAUSE ((thread-sleep 50) (pause)))
 
 (defn pause-button-action ()
     (set! PAUSE (not PAUSE))
@@ -38,7 +38,7 @@
     (java img-gr "drawOval" (- (/ WWidth 2) (/ a 2)) (- (/ WHeight 2) (/ b 2)) a b)
     ;(java w "revalidate");
     (java w "repaint")
-    (cond (eq? color BLUE) (java (class "java.lang.Thread") "sleep" 10)) )
+    (cond (eq? color BLUE) (thread-sleep 10)) )
 
 (defn drawOval (a b) drawOval-color a b BLUE)
 (defn clearOval (a b) drawOval-color a b GRAY)

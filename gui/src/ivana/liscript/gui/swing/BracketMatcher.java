@@ -53,36 +53,35 @@ public class BracketMatcher implements CaretListener
      * brackets, so the "matching" parenthesis might be a bad one.  For
      * this demo, we're not going to take quotes or comments into account
      * since that's not the point.
-     *
      * It's assumed that paren is the position of some parenthesis
      * character
      *
      * @return the position of the matching paren, or -1 if none is found
      **/
-    private static int findMatchingParen__(Document d, int paren)
-            throws BadLocationException
-    {
-        int parenCount = 1;
-        int i = paren-1;
-        for(; i >= 0; i--) {
-            char c = getCharAt(d, i);
-            switch(c) {
-                case ')':
-                case '}':
-                case ']':
-                    parenCount++;
-                    break;
-                case '(':
-                case '{':
-                case '[':
-                    parenCount--;
-                    break;
-            }
-            if(parenCount == 0)
-                break;
-        }
-        return i;
-    }
+//    private static int findMatchingParen__(Document d, int paren)
+//            throws BadLocationException
+//    {
+//        int parenCount = 1;
+//        int i = paren-1;
+//        for(; i >= 0; i--) {
+//            char c = getCharAt(d, i);
+//            switch(c) {
+//                case ')':
+//                case '}':
+//                case ']':
+//                    parenCount++;
+//                    break;
+//                case '(':
+//                case '{':
+//                case '[':
+//                    parenCount--;
+//                    break;
+//            }
+//            if(parenCount == 0)
+//                break;
+//        }
+//        return i;
+//    }
 
     private static int firstNonspaseOffset(Document d, int p, int dir)
             throws BadLocationException
@@ -184,10 +183,14 @@ public class BracketMatcher implements CaretListener
             //doc.set
 
         try {
-            if (! checkHighlightParens(doc, p-1)) // near left
-            if (! checkHighlightParens(doc, p))   // near right
-            if (! checkHighlightParens(doc, firstNonspaseOffset(doc, p-1, -1))) // far left
-            if (! checkHighlightParens(doc, firstNonspaseOffset(doc, p, 1)) ) {}// far right
+//            if (! checkHighlightParens(doc, p-1)) // near left
+//                if (! checkHighlightParens(doc, p)) // near right
+//                    if (! checkHighlightParens(doc, firstNonspaseOffset(doc, p-1, -1))) // far left
+//                        if (! checkHighlightParens(doc, firstNonspaseOffset(doc, p, 1)) ) {} // far right
+            boolean r = checkHighlightParens(doc, p-1) // near left
+                    || checkHighlightParens(doc, p) // near right
+                    || checkHighlightParens(doc, firstNonspaseOffset(doc, p-1, -1)) // far left
+                    || checkHighlightParens(doc, firstNonspaseOffset(doc, p, 1)); // far right
         } catch (BadLocationException ex) { throw new Error(ex); }
     }
 }

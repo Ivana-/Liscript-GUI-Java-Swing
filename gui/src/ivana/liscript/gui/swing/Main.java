@@ -1,14 +1,18 @@
 package ivana.liscript.gui.swing;
 
-import ivana.liscript.core.*;
+import ivana.liscript.core.Env;
+import ivana.liscript.core.Eval;
+import ivana.liscript.core.Read;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,11 +23,11 @@ public class Main extends JFrame {
     public static JTabbedPane tabbedPane;
     public static Main application;
     private static JCheckBox checkBoxEvalIter, checkBoxShowEvalTime;
-    public static int maxstacksize;
+//    public static int maxstacksize;
 
     Main() {
-        super("Liscript REPL v.0.1");
-        this.setIconImage(createImageIcon("images/Lambda.gif", "").getImage());
+        super("Liscript REPL v.0.3 (running on java " + System.getProperty("java.version") + ")");
+        this.setIconImage(createImageIcon("images/Lambda.jpg", "").getImage());
 
         WorkPanel.setDefaultSettings();
         SyntaxHighlighter.setDefaultSettings();
@@ -33,6 +37,9 @@ public class Main extends JFrame {
 
         JToolBar buttonsPanel = new JToolBar(SwingConstants.HORIZONTAL);
         JButton button;
+        Border buttonBorder = BorderFactory.createEmptyBorder(10, 10, 10, 10);
+
+        File demoDirFile = new File("./demo/"); // on Windows "demo\\"
 
         Action loadFileAction = new AbstractAction() {
             @Override
@@ -43,7 +50,7 @@ public class Main extends JFrame {
                 //if (pane.isCin) return;
 
                 JFileChooser fileopen = new JFileChooser();
-                fileopen.setCurrentDirectory(new File("demo\\"));
+                fileopen.setCurrentDirectory(demoDirFile);
                 fileopen.setFileFilter(new FileNameExtensionFilter("liscript files", "liscript"));
                 int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
                 if (ret == JFileChooser.APPROVE_OPTION) {
@@ -60,11 +67,9 @@ public class Main extends JFrame {
         };
         button = new JButton();
         button.setAction(loadFileAction);
-        //int buttonSize = 32;
-        //button.setPreferredSize(new Dimension(buttonSize, buttonSize));
-        //button.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
         button.setToolTipText("load file");
         button.setIcon(createImageIcon("images/Download.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         Action reloadFileAction = new AbstractAction() {
@@ -87,8 +92,8 @@ public class Main extends JFrame {
         button = new JButton();
         button.setAction(reloadFileAction);
         button.setToolTipText("reload file");
-        //button.setIcon(UIManager.getIcon("OptionPane.warningIcon"));
         button.setIcon(createImageIcon("images/Refresh.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
         buttonsPanel.addSeparator();
 
@@ -98,53 +103,51 @@ public class Main extends JFrame {
         };
         button = new JButton();
         button.setAction(addNewTabAction);
-        //button.setIcon(UIManager.getIcon("OptionPane.errorIcon"));
         button.setToolTipText("add new tab");
         button.setIcon(createImageIcon("images/Create.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         //Action showSettingsDialogAction = new AbstractAction() {
-        ActionListener showSettingsDialogAction = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                SettingsDialog sd = new SettingsDialog(null);
-                sd.setLocationRelativeTo(null);
-                sd.showDialog();
-            }
+        ActionListener showSettingsDialogAction = e -> {
+            SettingsDialog sd = new SettingsDialog(null);
+            sd.setLocationRelativeTo(null);
+            sd.showDialog();
         };
         button = new JButton();
         //button.setAction(showSettingsDialogAction);
         button.addActionListener(showSettingsDialogAction);
         button.setToolTipText("settings");
         button.setIcon(createImageIcon("images/Settings.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
         buttonsPanel.addSeparator();
 
-        JTextArea activeThreads = new JTextArea();
-        Action showActiveThreadsAction = new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
-                ThreadGroup parent;
-                String s = "";
-                while ((parent = threadGroup.getParent()) != null) {
-                    threadGroup = parent;
-                    Thread[] threadList = new Thread[threadGroup.activeCount()];
-                    threadGroup.enumerate(threadList);
-                    for (Thread thread : threadList) {
-                        s = s + thread.getThreadGroup().getName()
-                                + " " + thread.getPriority()
-                                + " " + thread.getName()
-                                + "\n";
-                    }
-                    activeThreads.setText(s);
-                }
-            }
-        };
-        //JButton showActiveThreads = new JButton();
-        //showActiveThreads.setAction(showActiveThreadsAction);
-        //showActiveThreads.setText("active threads");
-        //showActiveThreads.setIcon(UIManager.getIcon("OptionPane.questionIcon"));
+//        JTextArea activeThreads = new JTextArea();
+//        Action showActiveThreadsAction = new AbstractAction() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
+//                ThreadGroup parent;
+//                String s = "";
+//                while ((parent = threadGroup.getParent()) != null) {
+//                    threadGroup = parent;
+//                    Thread[] threadList = new Thread[threadGroup.activeCount()];
+//                    threadGroup.enumerate(threadList);
+//                    for (Thread thread : threadList) {
+//                        s = s + thread.getThreadGroup().getName()
+//                                + " " + thread.getPriority()
+//                                + " " + thread.getName()
+//                                + "\n";
+//                    }
+//                    activeThreads.setText(s);
+//                }
+//            }
+//        };
+//        JButton showActiveThreads = new JButton();
+//        showActiveThreads.setAction(showActiveThreadsAction);
+//        showActiveThreads.setText("active threads");
+//        showActiveThreads.setIcon(UIManager.getIcon("OptionPane.questionIcon"));
 
         Action interruptAction = new AbstractAction() {
             @Override
@@ -157,6 +160,7 @@ public class Main extends JFrame {
         button.setAction(interruptAction);
         button.setToolTipText("interrupt (Esc)");
         button.setIcon(createImageIcon("images/Cancel.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         Action sendInputPaneInputAction = new AbstractAction() {
@@ -168,9 +172,9 @@ public class Main extends JFrame {
         };
         button = new JButton();
         button.setAction(sendInputPaneInputAction);
-        //button.setIcon(UIManager.getIcon("OptionPane.questionIcon"));
         button.setToolTipText("run input pane (Ctrl+Enter)");
         button.setIcon(createImageIcon("images/Ok.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         Action restoreInputPaneAction = new AbstractAction() {
@@ -182,9 +186,9 @@ public class Main extends JFrame {
         };
         button = new JButton();
         button.setAction(restoreInputPaneAction);
-        //button.setIcon(UIManager.getIcon("OptionPane.questionIcon"));
         button.setToolTipText("restore input pane (Ctrl+=)");
         button.setIcon(createImageIcon("images/Flip.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
         buttonsPanel.addSeparator();
 
@@ -197,7 +201,7 @@ public class Main extends JFrame {
                 //if (pane.isCin) return;
 
                 JFileChooser fileopen = new JFileChooser();
-                fileopen.setCurrentDirectory(new File("demo\\"));
+                fileopen.setCurrentDirectory(demoDirFile);
                 fileopen.setFileFilter(new FileNameExtensionFilter("liscript files", "liscript"));
                 int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
                 if (ret == JFileChooser.APPROVE_OPTION) {
@@ -219,6 +223,7 @@ public class Main extends JFrame {
         button.setAction(openFileAction);
         button.setToolTipText("open file");
         button.setIcon(createImageIcon("images/Open.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         Action saveFileAction = new AbstractAction() {
@@ -253,6 +258,7 @@ public class Main extends JFrame {
         button.setAction(saveFileAction);
         button.setToolTipText("save file");
         button.setIcon(createImageIcon("images/Save.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         Action saveFileAsAction = new AbstractAction() {
@@ -270,7 +276,7 @@ public class Main extends JFrame {
                     return;
                 }
                 JFileChooser fileopen = new JFileChooser();
-                fileopen.setCurrentDirectory(new File("demo\\"));
+                fileopen.setCurrentDirectory(demoDirFile);
                 fileopen.setFileFilter(new FileNameExtensionFilter("liscript files", "liscript"));
                 int ret = fileopen.showDialog(getParent(), "Выберите файл скрипта");
                 if (ret == JFileChooser.APPROVE_OPTION) {
@@ -294,6 +300,7 @@ public class Main extends JFrame {
         button.setAction(saveFileAsAction);
         button.setToolTipText("save file as");
         button.setIcon(createImageIcon("images/Save as.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
 
         Action sendEditPaneInputAction = new AbstractAction() {
@@ -307,12 +314,14 @@ public class Main extends JFrame {
         button.setAction(sendEditPaneInputAction);
         button.setToolTipText("run edit pane (Ctrl+F1)");
         button.setIcon(createImageIcon("images/Play.png", button.getToolTipText()));
+        button.setBorder(buttonBorder);
         buttonsPanel.add(button);
         buttonsPanel.addSeparator();
 
         checkBoxEvalIter = new JCheckBox("Итеративный эвалюатор");
         //checkBoxBold.setSelected((boolean) attr.getAttribute(StyleConstants.Bold));
         buttonsPanel.add(checkBoxEvalIter);
+        buttonsPanel.addSeparator();
 
         checkBoxShowEvalTime = new JCheckBox("Замерять время");
         buttonsPanel.add(checkBoxShowEvalTime);
@@ -341,7 +350,7 @@ public class Main extends JFrame {
         }
     }
 
-    private class ClosableTabTitle extends JPanel {
+    private static class ClosableTabTitle extends JPanel {
         public JLabel label;
 
         public ClosableTabTitle(final String title) {
@@ -367,14 +376,14 @@ public class Main extends JFrame {
             };
             JButton button = new JButton();
             button.setAction(closeTabAction);
-            //button.setIcon(UIManager.getIcon("InternalFrame.paletteCloseIcon"));
-            Icon icon = UIManager.getIcon("InternalFrame.closeIcon");
-            button.setIcon(icon);
-            button.setPreferredSize(new Dimension(icon.getIconWidth(), icon.getIconHeight()));
+//            Icon icon = UIManager.getIcon("InternalFrame.closeIcon");
+//            button.setIcon(icon);
+//            button.setPreferredSize(new Dimension(icon.getIconWidth(), icon.getIconHeight()));
             button.setToolTipText("close this tab");
+            button.setText("X");
             //Make the button looks the same for all Laf's
-        //    button.setUI(new BasicButtonUI());
-        //    button.setContentAreaFilled(false);
+            //button.setUI(new BasicButtonUI());
+            //button.setContentAreaFilled(false);
 
             add(label, BorderLayout.CENTER);
             add(button, BorderLayout.EAST);
@@ -392,7 +401,7 @@ public class Main extends JFrame {
     public static class InterThread extends Thread {
         public String expression;
         public boolean showEcho;
-        private WorkPanel pane;
+        private final WorkPanel pane;
 
         InterThread(WorkPanel _pane, boolean _showEcho, String _exp) {
             pane = _pane; showEcho = _showEcho; expression = _exp; }
@@ -417,14 +426,14 @@ public class Main extends JFrame {
 
                 if (checkBoxEvalIter.isSelected()) {
                     pane.out(true, Eval.evalIter(pane, globalEnv, lv).toString());
-                    pane.out(true, "max стек: " + maxstacksize);
+                    //pane.out(true, "max стек: " + maxstacksize);
                 } else {
                     pane.out(true, Eval.eval(-1, true, pane, globalEnv, lv).toString());
                 }
 
                 time = System.nanoTime() - time;
                 if (checkBoxShowEvalTime.isSelected())
-                    pane.out(true, "" + String.format("%.5f", time/1.E9) + " сек");
+                    pane.out(true, String.format("%.5f", time/1.E9) + " сек");
 
             } catch (Throwable e) {
                 Thread.currentThread().interrupt();
@@ -445,35 +454,33 @@ public class Main extends JFrame {
 
     public static void setPaneTabState(WorkPanel pane, int state) {
 
-        Runnable doIt = new Runnable() {
-            public void run() {
-                int i = tabbedPane.indexOfComponent(pane);
-                if (i != -1) {
-                    Component c = tabbedPane.getTabComponentAt(i);
-                    if (c instanceof ClosableTabTitle) {
-                        JLabel label = ((ClosableTabTitle)c).label;
-                        if (state == 0) {
-                            label.setOpaque(false);
-                            label.setBackground(Color.white);
-                            pane.textAreaIn.setBackground(
-                                    (Color) WorkPanel.styleTextAreaIn.get("background"));
-                        } else {
-                            label.setOpaque(true);
+        Runnable doIt = () -> {
+            int i = tabbedPane.indexOfComponent(pane);
+            if (i != -1) {
+                Component c = tabbedPane.getTabComponentAt(i);
+                if (c instanceof ClosableTabTitle) {
+                    JLabel label = ((ClosableTabTitle)c).label;
+                    if (state == 0) {
+                        label.setOpaque(false);
+                        label.setBackground(Color.white);
+                        pane.inputPane.setBackground(
+                                (Color) WorkPanel.styleInputPane.get("background"));
+                    } else {
+                        label.setOpaque(true);
 
-                            if (state == 2) {
-                                label.setBackground(Color.yellow);
-                                pane.textAreaIn.setBackground(WorkPanel.textAreaIn_BackgroundIn);
-                                pane.textAreaIn.requestFocus();
-                            } else {
-                                label.setBackground(Color.gray);
-                                pane.textAreaIn.setBackground(
-                                        (Color) WorkPanel.styleTextAreaIn.get("background"));
-                            }
+                        if (state == 2) {
+                            label.setBackground(Color.yellow);
+                            pane.inputPane.setBackground(WorkPanel.inputPane_BackgroundIn);
+                            pane.inputPane.requestFocus();
+                        } else {
+                            label.setBackground(Color.gray);
+                            pane.inputPane.setBackground(
+                                    (Color) WorkPanel.styleInputPane.get("background"));
                         }
                     }
                 }
-                //tabbedPane.setForegroundAt(i, color);
             }
+            //tabbedPane.setForegroundAt(i, color);
         };
 
         if (SwingUtilities.isEventDispatchThread()) doIt.run();
@@ -489,41 +496,11 @@ public class Main extends JFrame {
 
     //--------------------------------- MAIN -----------------------------
 
-    //public static String DemoDir(){
-        //String path = System.getProperty("java.class.path");
-        //String FileSeparator = (String)System.getProperty("file.separator");
-        //return path.substring(0, path.lastIndexOf(FileSeparator)+1);
-
-    //    return "demo\\";
-        //return "C:\\Users\\Ivana\\Java_1\\txt\\";
-        //return "C:\\Users\\Ivana\\Java_1\\src\\com\\company\\txt\\";
-        //return "C:\\Users\\Ivana\\Java_1\\out\\artifacts\\Java_1_jar\\";
-    //}
-
-    public static String readFileToString_ (String fileAbsolutePath) throws IOException {
-        File file = new File(fileAbsolutePath);
-        String fileContents = "";
-        try (InputStream fileStream = new FileInputStream(file);
-             InputStream bufStream = new BufferedInputStream(fileStream);
-             Reader reader = new InputStreamReader(bufStream, StandardCharsets.UTF_8)) {
-
-            StringBuilder fileContentsBuilder = new StringBuilder();
-            char[] buffer = new char[1024];
-            int charsRead;
-            while ((charsRead = reader.read(buffer)) != -1) {
-                fileContentsBuilder.append(buffer, 0, charsRead);
-            }
-            fileContents = fileContentsBuilder.toString();
-        } catch (IOException e) {
-            //throw new RuntimeException(e.getMessage(), e);
-            throw e;
-        }
-        return fileContents;
-    }
-
     private static String readFileToString (String fileAbsolutePath) throws IOException {
         byte[] fileBytes = Files.readAllBytes(Paths.get(fileAbsolutePath));
-        return new String(fileBytes, StandardCharsets.UTF_8);
+        String r = new String(fileBytes, StandardCharsets.UTF_8);
+        return r.replace("\uFEFF", "");
+//        return Files.readString(Paths.get(fileAbsolutePath), StandardCharsets.UTF_8); needs Java 11+
     }
 
     private static void writeStringToFile (String s, String fileAbsolutePath) throws
@@ -534,19 +511,16 @@ public class Main extends JFrame {
 
     private static void loadFile (String fileName) {
 
-        Runnable doIt = new Runnable() {
-            public void run() {
-                WorkPanel pane =
-                        (WorkPanel)tabbedPane.getSelectedComponent();
-                if (pane == null) return;
-                //if (pane.thread != null) return;
-                try {
-                    String s = readFileToString(fileName);
-                    startNewThread(pane, false, s);
-                    //pane.out(true, s);
-                } catch (IOException ex) {
-                    pane.out(true, ex.getLocalizedMessage());
-                }
+        Runnable doIt = () -> {
+            WorkPanel pane = (WorkPanel)tabbedPane.getSelectedComponent();
+            if (pane == null) return;
+            //if (pane.thread != null) return;
+            try {
+                String s = readFileToString(fileName);
+                startNewThread(pane, false, s);
+                //pane.out(true, s);
+            } catch (IOException ex) {
+                pane.out(true, ex.getLocalizedMessage());
             }
         };
 
@@ -562,17 +536,27 @@ public class Main extends JFrame {
 
     private void run() {
         loadFile("standard_library.liscript");
-        //loadFile("test");
-        //loadFile("Demo");
-        //pane.out("Lets begin\n");
 
         WorkPanel pane = (WorkPanel) tabbedPane.getSelectedComponent();
-        if (pane != null) pane.textAreaIn.requestFocus();
+        if (pane != null) pane.inputPane.requestFocus();
+
+//        String fileAbsolutePath = "/home/ivana/pet-projects/Java/Liscript-GUI-Java-Swing/test-formatting.liscript";
+//        try {
+//            String s = Main.readFileToString(fileAbsolutePath);
+//            Runnable doIt = () -> {
+////                pane.editPane.setText("");
+////                try {
+////                    pane.editPane.getStyledDocument().insertString(0, s, null);
+////                } catch (BadLocationException ex) {}
+//                pane.editPane.setText(s);
+//            };
+//            if (SwingUtilities.isEventDispatchThread()) doIt.run(); else SwingUtilities.invokeLater(doIt);
+//        } catch (Throwable e) {} ;
     }
 
     public static void main(String[] args) {
-        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
-        catch (Throwable e) {}
+//        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
+//        catch (Throwable e) {}
 
         //Main
         application = new Main();

@@ -12,6 +12,7 @@ import java.beans.XMLEncoder;
 import java.io.*;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class SettingsDialog extends JDialog {
 
@@ -34,10 +35,13 @@ public class SettingsDialog extends JDialog {
 
     private static class FontChooser extends JDialog implements ActionListener {
 
-        private JComboBox nameComboBox, sizeComboBox;
-        private JCheckBox boldBox, italicBox;
-        private JLabel textLabel;
-        private JButton okButton, cancelButton;
+        private final JComboBox nameComboBox;
+        private final JComboBox sizeComboBox;
+        private final JCheckBox boldBox;
+        private final JCheckBox italicBox;
+        private final JLabel textLabel;
+        private final JButton okButton;
+        private final JButton cancelButton;
         private Font currentFont, returnFont;
 
         //public FontChooser(JFrame owner, Font inputFont) {
@@ -45,8 +49,8 @@ public class SettingsDialog extends JDialog {
             super(owner, "Выберите шрифт", true);
 
             setVisible(false);
-            try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
-            catch (Throwable e) {}
+//            try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
+//            catch (Throwable e) {}
 
             setLayout(new BorderLayout());
 
@@ -129,8 +133,8 @@ public class SettingsDialog extends JDialog {
             int style = 0;
             if(boldBox.isSelected()) style += Font.BOLD;
             if(italicBox.isSelected()) style += Font.ITALIC;
-            currentFont = new Font(nameComboBox.getSelectedItem().toString(), style,
-                    Integer.parseInt(sizeComboBox.getSelectedItem().toString()));
+            currentFont = new Font(Objects.requireNonNull(nameComboBox.getSelectedItem()).toString(), style,
+                    Integer.parseInt(Objects.requireNonNull(sizeComboBox.getSelectedItem()).toString()));
             textLabel.setFont(currentFont);
         }
 
@@ -146,61 +150,50 @@ public class SettingsDialog extends JDialog {
 
         JButton button = new JButton("Шрифт");
         button.setToolTipText("Выбор шрифта");
-        button.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                Font font = (Font) attr.get("font");
-                FontChooser fontChooser = new FontChooser(SettingsDialog.this, font);
-                fontChooser.showDialog();
-                font = fontChooser.getFont();
-                if (font != null) {
-                    attr.put("font", font);
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            Font font = (Font) attr.get("font");
+            FontChooser fontChooser = new FontChooser(SettingsDialog.this, font);
+            fontChooser.showDialog();
+            font = fontChooser.getFont();
+            if (font != null) {
+                attr.put("font", font);
+                applySettings();
             }
         });
         panel.add(button);
 
         button = new JButton("Цвет текста");
         button.setToolTipText("Выбор цвета");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Color color = (Color) attr.get("foreground");
-                color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
-                if (color != null) {
-                    attr.put("foreground", color);
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            Color color = (Color) attr.get("foreground");
+            color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
+            if (color != null) {
+                attr.put("foreground", color);
+                applySettings();
             }
         });
         panel.add(button);
 
         button = new JButton("Цвет фона");
         button.setToolTipText("Выбор цвета");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Color color = (Color) attr.get("background");
-                color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
-                if (color != null) {
-                    attr.put("background", color);
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            Color color = (Color) attr.get("background");
+            color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
+            if (color != null) {
+                attr.put("background", color);
+                applySettings();
             }
         });
         panel.add(button);
 
         button = new JButton("Цвет курсора");
         button.setToolTipText("Выбор цвета");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Color color = (Color) attr.get("caretColor");
-                color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
-                if (color != null) {
-                    attr.put("caretColor", color);
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            Color color = (Color) attr.get("caretColor");
+            color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
+            if (color != null) {
+                attr.put("caretColor", color);
+                applySettings();
             }
         });
         panel.add(button);
@@ -215,50 +208,38 @@ public class SettingsDialog extends JDialog {
 
         JButton button = new JButton("Цвет");
         button.setToolTipText("Выбор цвета");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Color color = (Color) attr.getAttribute(StyleConstants.Foreground);
-                color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
-                if (color != null) {
-                    attr.addAttribute(StyleConstants.Foreground, color);
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            Color color = (Color) attr.getAttribute(StyleConstants.Foreground);
+            color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
+            if (color != null) {
+                attr.addAttribute(StyleConstants.Foreground, color);
+                applySettings();
             }
         });
         panel.add(button);
 
         JCheckBox checkBoxBold = new JCheckBox("Жирный");
         checkBoxBold.setSelected((boolean) attr.getAttribute(StyleConstants.Bold));
-        checkBoxBold.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                attr.addAttribute(StyleConstants.Bold, checkBoxBold.isSelected());
-                applySettings();
-            }
+        checkBoxBold.addActionListener(e -> {
+            attr.addAttribute(StyleConstants.Bold, checkBoxBold.isSelected());
+            applySettings();
         });
         checkBoxBold.invalidate();
         panel.add(checkBoxBold);
 
         JCheckBox checkBoxUnderline = new JCheckBox("Подчеркнутый");
         checkBoxUnderline.setSelected((boolean) attr.getAttribute(StyleConstants.Underline));
-        checkBoxUnderline.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                attr.addAttribute(StyleConstants.Underline, checkBoxUnderline.isSelected());
-                applySettings();
-            }
+        checkBoxUnderline.addActionListener(e -> {
+            attr.addAttribute(StyleConstants.Underline, checkBoxUnderline.isSelected());
+            applySettings();
         });
         panel.add(checkBoxUnderline);
 
         JCheckBox checkBoxItalic = new JCheckBox("Наклонный");
         checkBoxItalic.setSelected((boolean) attr.getAttribute(StyleConstants.Italic));
-        checkBoxItalic.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                attr.addAttribute(StyleConstants.Italic, checkBoxItalic.isSelected());
-                applySettings();
-            }
+        checkBoxItalic.addActionListener(e -> {
+            attr.addAttribute(StyleConstants.Italic, checkBoxItalic.isSelected());
+            applySettings();
         });
         panel.add(checkBoxItalic);
 
@@ -270,14 +251,14 @@ public class SettingsDialog extends JDialog {
 
         //setVisible(false);
 
-        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
-        catch (Throwable e) {}
+//        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
+//        catch (Throwable e) {}
 
         setLayout(new GridLayout(0, 1));
 
-        add(chooseTextPanePanel(WorkPanel.styleTextArea, "Окно вывода :"));
+        add(chooseTextPanePanel(WorkPanel.styleOutputPane, "Окно вывода :"));
         add(chooseTextPanePanel(WorkPanel.styleEditPane, "Окно редактирования :"));
-        add(chooseTextPanePanel(WorkPanel.styleTextAreaIn, "Окно ввода :"));
+        add(chooseTextPanePanel(WorkPanel.styleInputPane, "Окно ввода :"));
 
         JButton button;
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -285,15 +266,12 @@ public class SettingsDialog extends JDialog {
 
         button = new JButton("Цвет фона");
         button.setToolTipText("Выбор цвета");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Color color = WorkPanel.textAreaIn_BackgroundIn;
-                color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
-                if (color != null) {
-                    WorkPanel.textAreaIn_BackgroundIn = color;
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            Color color = WorkPanel.inputPane_BackgroundIn;
+            color = JColorChooser.showDialog(SettingsDialog.this, "Выберите цвет", color);
+            if (color != null) {
+                WorkPanel.inputPane_BackgroundIn = color;
+                applySettings();
             }
         });
         panel.add(button);
@@ -313,86 +291,74 @@ public class SettingsDialog extends JDialog {
 
         button = new JButton("Сохранить настройки");
         button.setToolTipText("Будут использованы как настройки по-умолчанию");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    write(getHashMapSettingsToSave(), "settings.xml");
-                } catch (Exception ex) {
-                    //throw new RuntimeException(e.getMessage(), e);
-                    //throw ex;
-                }
-                setVisible(false);
+        button.addActionListener(e -> {
+            try {
+                write(getHashMapSettingsToSave(), "settings.xml");
+            } catch (Exception ex) {
+                //throw new RuntimeException(e.getMessage(), e);
+                //throw ex;
             }
+            setVisible(false);
         });
         panel.add(button);
 
         button = new JButton("Восстановить базовые настройки");
         button.setToolTipText("Восстановить настройки приложения");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                File file = new File("settings.xml");
-                if (file.exists()) {
-                    int reply = JOptionPane.showConfirmDialog(null,
-                            "Удалить сохраненный файл настроек по умолчанию" +
-                                    " и восстановить базовые настройки?",
-                            null, JOptionPane.YES_NO_OPTION);
-                    if (reply != JOptionPane.YES_OPTION) return;
-                }
-                if (!file.delete()) return;
-                WorkPanel.setDefaultSettings();
-                SyntaxHighlighter.setDefaultSettings();
-                applySettings();
+        button.addActionListener(e -> {
+            File file = new File("settings.xml");
+            if (file.exists()) {
+                int reply = JOptionPane.showConfirmDialog(null,
+                        "Удалить сохраненный файл настроек по умолчанию" +
+                                " и восстановить базовые настройки?",
+                        null, JOptionPane.YES_NO_OPTION);
+                if (reply != JOptionPane.YES_OPTION) return;
             }
+            if (!file.delete()) return;
+            WorkPanel.setDefaultSettings();
+            SyntaxHighlighter.setDefaultSettings();
+            applySettings();
         });
         panel.add(button);
 
         button = new JButton("Загрузить тему");
         button.setToolTipText("Загрузить настройки из файла");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JFileChooser fc = new JFileChooser();
-                fc.setCurrentDirectory(new File("themes\\"));
-                fc.setFileFilter(new FileNameExtensionFilter("xml files", "xml"));
-                int ret = fc.showDialog(getParent(), "Выберите файл настройки");
-                if (ret == JFileChooser.APPROVE_OPTION) {
-                    readSettingFromFile (fc.getSelectedFile().getAbsolutePath());
-                    applySettings();
-                }
+        button.addActionListener(e -> {
+            JFileChooser fc = new JFileChooser();
+            fc.setCurrentDirectory(new File("themes\\"));
+            fc.setFileFilter(new FileNameExtensionFilter("xml files", "xml"));
+            int ret = fc.showDialog(getParent(), "Выберите файл настройки");
+            if (ret == JFileChooser.APPROVE_OPTION) {
+                readSettingFromFile (fc.getSelectedFile().getAbsolutePath());
+                applySettings();
             }
         });
         panel.add(button);
 
         button = new JButton("Сохранить тему как");
         button.setToolTipText("Сохранить настройки в файл");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                File dir = new File("themes");
-                //dir.exists() && dir.isDirectory()
-                if (!dir.exists()) {
-                    if (!dir.mkdir()) {
-                        JOptionPane.showMessageDialog(null,
-                            "Не удалось создать каталог настроек //themes",
-                            "Ошибка!", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
+        button.addActionListener(e -> {
+            File dir = new File("themes");
+            //dir.exists() && dir.isDirectory()
+            if (!dir.exists()) {
+                if (!dir.mkdir()) {
+                    JOptionPane.showMessageDialog(null,
+                        "Не удалось создать каталог настроек //themes",
+                        "Ошибка!", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-                //dir.mkdirs();
+            }
+            //dir.mkdirs();
 
-                JFileChooser fc = new JFileChooser();
-                fc.setCurrentDirectory(new File("themes\\"));
-                fc.setFileFilter(new FileNameExtensionFilter("xml files", "xml"));
-                int ret = fc.showSaveDialog(null);
-                if (ret == JFileChooser.APPROVE_OPTION) {
-                    String fileName = fc.getSelectedFile().getAbsolutePath();
-                    if (!fileName.endsWith(".xml")) fileName = fileName + ".xml";
-                    try {
-                        write(getHashMapSettingsToSave(), fileName);
-                    } catch ( Exception ex ) {}
-                }
+            JFileChooser fc = new JFileChooser();
+            fc.setCurrentDirectory(new File("themes\\"));
+            fc.setFileFilter(new FileNameExtensionFilter("xml files", "xml"));
+            int ret = fc.showSaveDialog(null);
+            if (ret == JFileChooser.APPROVE_OPTION) {
+                String fileName = fc.getSelectedFile().getAbsolutePath();
+                if (!fileName.endsWith(".xml")) fileName = fileName + ".xml";
+                try {
+                    write(getHashMapSettingsToSave(), fileName);
+                } catch ( Exception ex ) {}
             }
         });
         panel.add(button);
@@ -413,7 +379,7 @@ public class SettingsDialog extends JDialog {
         return r;
     }
 
-    public void showDialog() {setVisible(true);}
+    public void showDialog() { setVisible(true); }
 
     private void applySettings() {
         for (int i = 0; i < Main.tabbedPane.getTabCount(); i++)
@@ -422,10 +388,10 @@ public class SettingsDialog extends JDialog {
 
     private HashMap<String, Object> getHashMapSettingsToSave() {
         HashMap<String, Object> settings = new HashMap<>();
-        settings.put("styleTextArea", WorkPanel.styleTextArea);
-        settings.put("styleTextAreaIn", WorkPanel.styleTextAreaIn);
+        settings.put("styleOutputPane", WorkPanel.styleOutputPane);
+        settings.put("styleInputPane", WorkPanel.styleInputPane);
         settings.put("styleEditPane", WorkPanel.styleEditPane);
-        settings.put("textAreaIn_BackgroundIn", WorkPanel.textAreaIn_BackgroundIn);
+        settings.put("inputPane_BackgroundIn", WorkPanel.inputPane_BackgroundIn);
         settings.put("styleUtil", sAS2HM(SyntaxHighlighter.styleUtil));
         settings.put("styleNumber", sAS2HM(SyntaxHighlighter.styleNumber));
         settings.put("styleBoolean", sAS2HM(SyntaxHighlighter.styleBoolean));
@@ -474,11 +440,11 @@ public class SettingsDialog extends JDialog {
                 Object v = entry.getValue();
                 //System.out.println(id + " = " + v.toString());
 
-                if (id.equals("styleTextArea")) readHM(WorkPanel.styleTextArea, v);
-                else if (id.equals("styleTextAreaIn")) readHM(WorkPanel.styleTextAreaIn, v);
+                if (id.equals("styleOutputPane")) readHM(WorkPanel.styleOutputPane, v);
+                else if (id.equals("styleInputPane")) readHM(WorkPanel.styleInputPane, v);
                 else if (id.equals("styleEditPane")) readHM(WorkPanel.styleEditPane, v);
-                else if (id.equals("textAreaIn_BackgroundIn")) {
-                    if (v instanceof Color) WorkPanel.textAreaIn_BackgroundIn = (Color)v;
+                else if (id.equals("inputPane_BackgroundIn")) {
+                    if (v instanceof Color) WorkPanel.inputPane_BackgroundIn = (Color)v;
                 }
                 else if (id.equals("styleUtil")) readAttributes(SyntaxHighlighter.styleUtil, v);
                 else if (id.equals("styleNumber")) readAttributes(SyntaxHighlighter.styleNumber, v);

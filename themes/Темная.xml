@@ -54,7 +54,7 @@
    </object>
   </void>
   <void method="put">
-   <string>styleTextAreaIn</string>
+   <string>styleInputPane</string>
    <object class="java.util.HashMap">
     <void method="put">
      <string>background</string>
@@ -94,7 +94,7 @@
    </object>
   </void>
   <void method="put">
-   <string>textAreaIn_BackgroundIn</string>
+   <string>inputPane_BackgroundIn</string>
    <object class="java.awt.Color">
     <int>102</int>
     <int>0</int>
@@ -129,7 +129,7 @@
    </object>
   </void>
   <void method="put">
-   <string>styleTextArea</string>
+   <string>styleOutputPane</string>
    <object class="java.util.HashMap">
     <void method="put">
      <string>background</string>

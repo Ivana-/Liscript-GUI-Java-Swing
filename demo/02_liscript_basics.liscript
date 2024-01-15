@@ -68,7 +68,7 @@
     cond   : многокейсовый условный оператор
     while  : оператор цикла
     eval   : вычислитель выражения
-    tray   : печать шагов вычисления и уровня стека
+    trace  : печать шагов вычисления и уровня стека
 
     read, print : ввод/вывод
 
@@ -125,11 +125,11 @@
 (pause)
 
 (print "
-Примеры - tray:
+Примеры - trace:
 
 ")
 (show-ex (defn f (i) (cond (< i 2) 1 (* i (f (- i 1))))))
-(show-ex ((print \n) (tray f 3)))
+(show-ex ((print \n) (trace f 3)))
 (pause)
 
 (print "

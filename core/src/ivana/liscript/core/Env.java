@@ -2,6 +2,29 @@ package ivana.liscript.core;
 
 import java.util.HashMap;
 
+//class Env:
+//        def __init__(self, m, p):
+//        self.frame, self.parent = m, p
+//
+//        def setvar(self, k, v):
+//        e = self
+//        while e is not None:
+//        if k in e.frame:
+//        e.frame[k] = v
+//        break
+//        e = e.parent
+//
+//        def getvar(self, k, s):
+//        e = self
+//        while e is not None:
+//        if k in e.frame:
+//        return e.frame[k]
+//        e = e.parent
+//        return s if isinstance(s, Symbol) else Symbol(k)
+//
+//        def defvar(self, k, v):
+//        self.frame[k] = v
+
 /**
  * Иерархическая структура окружения - словарь связей: строковый ключ - значение, и ссылка на
  * родительское окружение. Структура для хранения словаря НЕ является потокобезопасной.
@@ -44,10 +67,11 @@ public class Env {
      * @param var строка-ключ
      * @return объект-значение
      */
-    public Object getVar(String var) {
+    public Object getVar(Eval.Symbol var) {
+        String key = var.toString();
         Env env = this;
         while (env != null) {
-            if (env.map.containsKey(var)) return env.map.get(var);
+            if (env.map.containsKey(key)) return env.map.get(key);
             env = env.parent;
         }
         return var;

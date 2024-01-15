@@ -2,10 +2,6 @@
 ; Задаем ширину / высоту окна, количество и максимальный радиус шариков ;
 (defn bouncing-balls (w-width w-height n-balls r-ball-max)
 
-    ; макросы, которым место в стандартной библиотеке ;
-    (defmacro rnd () java (class "java.lang.Math") "random")
-    (defmacro round (x) java x "intValue")
-
     ; смещает координату / скорость шарика по одной оси ;
     (defn move-dir (ball ind-x ind-dx x-max)
         (def x (java ball "get" ind-x)
@@ -29,7 +25,7 @@
     (defn add-new-ball ()
         (defn rnd-dx () (def v (+ (* v-max (rnd)) 1)) (cond (< (rnd) 0.5) v (- 0 v)) )
         (defn rnd-rgb () (round (* 200 (rnd)) ))
-        (def color (java (class "java.awt.Color") "new" (rnd-rgb) (rnd-rgb) (rnd-rgb)))
+        (def color (RGB (rnd-rgb) (rnd-rgb) (rnd-rgb)))
         (def ball (java (class "java.util.HashMap") "new"))
         (java ball "put" 0 (/ w-width 2))
         (java ball "put" 1 (rnd-dx))
@@ -45,13 +41,13 @@
         (def n n-balls)
         (while (> n 0) (move-draw (java balls "get" n)) (set! n (- n 1)))
         (java window "repaint")
-        (java (class "java.lang.Thread") "sleep" 50)
+        (thread-sleep 50)
         (go))
 
     ; параметры окна и графики, вызываются макросы стандартной библиотеки ;
     (def image (new-image w-width w-height))
     (def img-gr (new-imageGraphics image))
-    (java img-gr "setBackground" (java (class "java.awt.Color") "new" 255 255 200))
+    (java img-gr "setBackground" (RGB 255 255 200))
     (def window (new-window "FlowLayout"))
     (add-image window image)
     (java window "setLocationByPlatform" true)

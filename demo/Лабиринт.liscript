@@ -1,0 +1,432 @@
+
+; field generator - transfer the number of rows, columns, rivers, the length of the rivers and the number of holes ;
+(defn create-not-checked-field (max-r max-c rivers-count river-length holes-count)
+
+    ; random number generator in a given range 0 - (n-1) ;
+  (def random-int-object (java (class "java.util.Random") "new" 
+                               (java (class "java.lang.System") "currentTimeMillis")))
+  (defmacro random-int (n) java random-int-object "nextInt" n)
+
+    ; take a random list item: (1 2 3 4 5) -> 2 ;
+  (defn list-rand (l) cond (null? l) nil (list-ref (random-int (length l)) l))
+
+    ; split a random item from the list: (1 2 3 4 5) -> (2 (1 3 4 5)) ;
+  (defn get-rand-cell (l)
+    (def c (list-rand l))
+    (cond (null? l) nil (cons c (filter (lambda (x) not (eq? x c)) l) nil)))
+
+    ; give free cells to the field, the neighbors given a horizontal / vertical ;
+  (defn get-free-neighbours (p free-cs)
+    (defn good (p) and (and (<= 1 (car p) max-r) (<= 1 (cadr p) max-c)) (elem p free-cs))
+    (def neighbours (map (lambda (x) zipwith + p x) '((0 -1) (0 1) (-1 0) (1 0))))
+    (filter good neighbours))
+
+    ; add another cage to the river, splitting it off free: ;
+    ; ((7 3) (1 2 4 5 6)) -> ((4 7 3) (1 2 5 6)) ;
+  (defn get-next-river-cell (river-free-cs)
+    (def river (car river-free-cs) free-cs (cadr river-free-cs))
+    (def cs (cond (null? river) free-cs (get-free-neighbours (car river) free-cs)))
+    (cond (null? cs) nil
+          ((def c (list-rand cs))
+           (cons (cons c river) (filter (lambda (x) not (eq? x c)) free-cs) nil))))
+
+    ; dial a river of a given length: (() (1 2 3 4 5 6 7)) -> ((1 4 7 3) (2 5 6)) ;
+  (defn get-river (len river-free-cs)
+    cond (= 0 len) river-free-cs
+    (null? river-free-cs) nil
+    (get-river (- len 1) (get-next-river-cell river-free-cs)))
+
+    ; try to dial a river of a given length by limiting the number of failed attempts ;
+  (defn try-get-river (trys len river-free-cs)
+    (def river (get-river len river-free-cs))
+    (cond (= 0 trys) nil (null? river) (try-get-river (- trys 1) len river-free-cs) river))
+
+    ; add another river to the list of rivers, reducing the list of free cells ;
+  (defn add-river (rivers-free-cs)
+    (def rivers (car rivers-free-cs) free-cs (cadr rivers-free-cs))
+    (def river (try-get-river 50 river-length (cons nil free-cs nil)))
+    (cond (null? river) nil (cons (cons (car river) rivers) (cadr river) nil)))
+
+    ; add another hole to the list of holes, reducing the list of free cells ;
+  (defn add-hole (holes-free-cs)
+    (def holes (car holes-free-cs) free-cs (cadr holes-free-cs))
+    (cond (null? (cdr free-cs)) nil
+          ((def a (get-rand-cell free-cs) b (get-rand-cell (cadr a)))
+           (def hole (cons (car a) (car b) nil))
+           (cons (cons hole holes) (cadr b) nil))))
+
+  (def all-cells (concat (map
+                          (lambda (r) map (lambda (c) cons r c) (list-from-to 1 max-c))
+                          (list-from-to 1 max-r))))
+
+  (def rivers-free-cs (ntimes rivers-count add-river (cons nil all-cells nil)))
+  (def holes-free-cs (ntimes holes-count add-hole (cons nil (cadr rivers-free-cs) nil)))
+  (def rivers (car rivers-free-cs) holes (car holes-free-cs))
+
+  (cond (or (null? rivers-free-cs) (null? holes-free-cs))
+        "Не удалось создать карту"
+        (cons rivers holes nil)))
+
+
+
+; field test function ;
+(defn correct-field? (max-r max-c rivers-count river-length holes-count field)
+
+  (def rivers (car field) holes (cadr field))
+  (def max-reached-points-amount (- (* max-r max-c) (* rivers-count (- river-length 1))))
+
+    ; obtaining the second well coordinate by the first ;
+  (defn co-hole (p hole) (def a (car hole) b (cadr hole)) (cond (eq? p a) b (eq? p b) a p))
+
+    ; search for the transferred position in the list of objects (rivers or pits), returns the applied visitor ;
+  (defn get-by-p (p objects v)
+    (defn go (l i) cond (null? l) nil (elem p (car l)) (v i (car l)) (go (cdr l) (+ 1 i)))
+    (go objects 1))
+
+	; moving in the specified direction ;
+  (defn move (p-pred dr dc)
+    (def r (+ dr (car p-pred)) c (+ dc (cadr p-pred))
+      in-field (and (<= 1 r max-r) (<= 1 c max-c)) p (cons r c))
+    (def rr (get-by-p p rivers (lambda (oi river) last river)))
+    (def rh (get-by-p p holes  (lambda (oi hole) co-hole p hole)))
+    (cond (not in-field)   nil
+          (not (null? rr)) rr
+          (not (null? rh)) rh
+          p))
+
+	; adding a unique item to the list ;
+  (defn try-add (l x) cond (or (null? x) (elem x l)) l (cons x l))
+
+	; Adding steps in 4 directions from a given point ;
+  (defn add-steps (p l) 
+    foldl (lambda (d a) try-add a (move p (car d) (cadr d))) l '((-1 0) (1 0) (0 -1) (0 1)))
+
+	; Adding steps in 4 directions from all points of the list ;
+  (defn add-steps-from-all-points (l) foldl add-steps l l)
+
+	; list of achievable points from the transferred items ;
+  (defn points-reached (l)
+    (def ll (add-steps-from-all-points l))
+    (cond (= (length l) (length ll)) ll (points-reached ll)))
+
+	; From the point all the others are reachable ;
+  (defn correct-point? (p) 
+    = max-reached-points-amount (length (points-reached (cons (move p 0 0) nil))))
+
+	; From every point of the field all the others are reachable ;
+  (all correct-point? (concat (map
+                               (lambda (r) map (lambda (c) cons r c) (list-from-to 1 max-c))
+                               (list-from-to 1 max-r)))))
+
+
+
+; field generation function ;
+(defn new-field (max-r max-c rivers-count river-length holes-count start-r start-c)
+
+	; attempt to generate a field to be traversed a predetermined number of times ;
+  (defn try-create-check-field-n-times (n)
+    (def field (create-not-checked-field max-r max-c rivers-count river-length holes-count))
+
+    ; (set! log (++ log \n n ": " field)) ;
+
+    (cond (string? field) (try-create-check-field-n-times (- n 1))
+          (correct-field? max-r max-c rivers-count river-length holes-count field) (cons true field)
+          (<= n 1)		  (cons false "oops!" "try again")
+          (try-create-check-field-n-times (- n 1))))
+
+  (def total-cells (* max-r max-c) river-cells (* rivers-count river-length) hole-cells (* 2 holes-count))
+
+	; checking incoming data and generating a field ;
+  (cond
+    (< total-cells (+ river-cells hole-cells)) (cons false "ERROR" (++ total-cells "<" (+ river-cells hole-cells)))
+    (or (< max-r start-r) (< max-c start-c)) (cons false "ERROR" "start pt")
+    (try-create-check-field-n-times 10)))
+
+
+;
+====================================================================================================
+
+(def log "")
+
+(def wrong-field '(() (
+((1 2) (1 3)) 
+((2 3) (3 3)) 
+((2 2) (3 2)) 
+((1 1) (2 1))
+)))
+
+(correct-field? 3 3 0 0 4 wrong-field)
+
+(defn new-field----------- (max-r max-c rivers-count river-length holes-count start-r start-c)
+  (cons true wrong-field))
+
+====================================================================================================
+;
+
+
+; gui util functions ;
+
+(defn add-combo-box-from-to (panel label-text a b s)
+  (java panel "add" (java (class "javax.swing.JLabel") "new" (++ label-text "  ") 4))
+  (def combo (java (class "javax.swing.JComboBox") "new"))
+  (ntimes (- b a -1) (lambda (i) (java combo "addItem" i) (+ 1 i)) a)
+  (java combo "setSelectedItem" s)
+  (java panel "add" combo)
+  combo)
+
+(defn add-control (panel name action)
+  (def btn (java (class "ivana.liscript.gui.swing.GuiButton") "new"))
+  (java btn "setText" name)
+  (java btn "setLambda" action)
+  (java panel "add" btn)
+  btn)
+
+(defn add-control-sized (panel name action width height)
+  (def btn (add-control panel name action))
+  (java btn "setPreferredSize" (java (class "java.awt.Dimension") "new" width height))
+  btn)
+	
+(defn add-blank (panel) (java panel "add" (java (class "javax.swing.JLabel") "new")))
+
+(defn set-enabled-components (enabled components) (map (lambda (x) java x "setEnabled" enabled) components))
+
+
+
+; main function ;
+(defn main ()
+
+  (def window (new-window "FlowLayout"))
+
+	; mutable game variables ;
+  
+  (def max-r 4 max-c 4 rivers-count 2 river-length 4 holes-count 2)
+  (def rivers nil holes nil start-pos nil cur-pos nil steps-count 0 show-field-flag false)
+
+	; settings panel ;
+  
+  (def settings-panel (java (class "javax.swing.JPanel") "new"))
+  (java settings-panel "setLayout" (java (class "java.awt.GridLayout") "new" 8 2))
+  (def max-r-combo (add-combo-box-from-to settings-panel "rows:" 2 10 max-r))
+  (def max-c-combo (add-combo-box-from-to settings-panel "cols:" 2 10 max-c))
+  (def rivers-count-combo (add-combo-box-from-to settings-panel "rivers count:" 0 10 2))
+  (def river-length-combo (add-combo-box-from-to settings-panel "river length:" 1 20 4))
+  (def holes-count-combo  (add-combo-box-from-to settings-panel "holes count:" 0 50 2))
+  (def start-r-combo (add-combo-box-from-to settings-panel "start row:" 1 10 1))
+  (def start-c-combo (add-combo-box-from-to settings-panel "start col:" 1 10 1))
+
+  (def settings-panel-buttons
+    (id
+     (add-control
+      settings-panel "New game"
+      (lambda ()
+              (set-info "wait..." "")
+              (cond (not (null? image-component)) (java window "remove" image-component))
+              (set-enabled-components false settings-panel-buttons)
+              (set-enabled-components false control-panel-buttons)
+              (java window "pack")
+
+              (def
+                start-r (java start-r-combo "getSelectedItem")
+                start-c (java start-c-combo "getSelectedItem"))
+
+              (set! max-r (java max-r-combo "getSelectedItem")
+                    max-c (java max-c-combo "getSelectedItem")
+                    rivers-count (java rivers-count-combo "getSelectedItem")
+                    river-length (java river-length-combo "getSelectedItem")
+                    holes-count (java holes-count-combo "getSelectedItem")
+                    start-pos (cons start-r start-c)
+                    cur-pos start-pos
+                    rivers nil
+                    holes nil
+                    steps-count 0
+                    show-field-flag false)
+
+              (def field (new-field max-r max-c rivers-count river-length holes-count start-r start-c))
+
+              (set-enabled-components true settings-panel-buttons)
+
+              (cond (car field)
+				; field generates ok ;
+                    ((set! rivers (car (cdr field)) holes (cadr (cdr field)))
+
+                     (def image (java (class "java.awt.image.BufferedImage") "new" 
+                                      (+ 1 (* max-c sq-size)) (+ 1 (* max-r sq-size)) 1))
+
+                     (set! imageGraphics (java image "createGraphics"))
+                     (java imageGraphics "setBackground" WHITE)
+                     (def font (java (class 'java.awt.Font) "new" "Tahoma" 1 30))
+                     (java imageGraphics "setFont" font)
+
+                     (set! image-component (add-image window image))
+                     (java window "pack")
+                     (show-blank-field)
+                     (move cur-pos "Start" 0 0)
+                     (set-enabled-components true control-panel-buttons))
+                    
+				; some error when creating field ;
+                    ((set-info (car (cdr field)) (cadr (cdr field)))))))
+
+     (add-control settings-panel "Chart" 
+                  (lambda () 
+                          (set! show-field-flag (not show-field-flag))
+                          (cond show-field-flag (show-real-field) (show-blank-field))))))
+  
+  (java window "add" settings-panel)
+  (java window "add" (java (class "javax.swing.JLabel") "new" "     "))
+
+	; control-response panel ;
+  
+  (def control-response-panel (java (class "javax.swing.JPanel") "new"))
+  (java control-response-panel "setLayout" (java (class "java.awt.GridLayout") "new" 3 1))
+  (def response-font (java (class 'java.awt.Font) "new" "Tahoma" 1 25))
+
+  (def response-label (java (class "javax.swing.JLabel") "new" "New" 0))
+  (java response-label "setFont" response-font)
+  (java control-response-panel "add" response-label)
+
+  (def control-panel (java (class "javax.swing.JPanel") "new"))
+  (java control-panel "setLayout" (java (class "java.awt.GridLayout") "new" 3 3))
+
+  (def control-panel-buttons 
+    (filter (lambda (x) eq? "GuiButton" (typeof x)) 
+            (id
+             (add-blank control-panel)
+             (add-control-sized control-panel "^" (lambda () (move cur-pos "Up" -1 0)) 70 32)
+             (add-blank control-panel)
+             (add-control-sized control-panel "<" (lambda () (move cur-pos "Left" 0 -1)) 70 32)
+             (add-blank control-panel)
+             (add-control-sized control-panel ">" (lambda () (move cur-pos "Right" 0 1)) 70 32)
+             (add-blank control-panel)
+             (add-control-sized control-panel "v" (lambda () (move cur-pos "Down" 1 0)) 70 32)
+             (add-blank control-panel))))
+  (set-enabled-components false control-panel-buttons)
+  (java control-response-panel "add" control-panel)
+
+  (def step-label (java (class "javax.swing.JLabel") "new" "game?" 0))
+  (java step-label "setFont" response-font)
+  (java control-response-panel "add" step-label)
+
+  (java window "add" control-response-panel)
+  (java window "add" (java (class "javax.swing.JLabel") "new" "     "))
+
+  (defn set-response (dir response)
+    (set! steps-count (+ 1 steps-count))
+    (java step-label "setText" (++ steps-count))
+    (java response-label "setText" response))
+
+  (defn set-info (up down)
+    (java response-label "setText" up)
+    (java step-label "setText" down))
+
+	; gui logic ;
+  
+  (def sq-size 50 cur-pos-color (RGB 255 255 200) cell-color (RGB 220 220 220))
+  (def imageGraphics nil image-component nil)
+
+	; Drawing a cell with the given coordinates and color ;
+  (defn draw-cell (r c cur-color)
+    (java imageGraphics "setColor" cur-color)
+    (java imageGraphics "fill3DRect" 
+          (* (- c 1) sq-size) (* (- r 1) sq-size) (- sq-size 1) (- sq-size 1) true))
+
+	; the coordinates of the middle of the cell ;
+  (defn c-c (rc) + (/ sq-size 2) (* (- rc 1) sq-size))
+  (defn x-c (p) c-c (cadr p))
+  (defn y-c (p) c-c (car p))
+
+	; adding a point to a polygon ;
+  (defn add-p (poly p d) java poly "addPoint" (+ (x-c p) d) (+ (y-c p) d))
+
+	; line between centers of 2 cells ;
+  (defn draw-center-line (p1 p2)
+    (java imageGraphics "setColor" BLUE)
+    ;(java imageGraphics "drawLine" (x-c p1) (y-c p1) (x-c p2) (y-c p2));
+    (def d 2)
+    (def poly (java (class "java.awt.Polygon") "new"))
+    (add-p poly p1 (- 0 d))
+    (add-p poly p2 (- 0 d))
+    (add-p poly p2 d)
+    (add-p poly p1 d)
+    (java imageGraphics "fillPolygon" poly))
+
+	; circle in the center of the cell ;
+  (defn draw-center-oval (p r)
+    (java imageGraphics "setColor" BLUE)
+    (java imageGraphics "fillOval" (- (x-c p) r) (- (y-c p) r) (* 2 r) (* 2 r)))
+
+	; string in the center of the cell ;
+  (defn draw-center-string (p s)
+    (java imageGraphics "setColor" BLACK)
+    (java imageGraphics "drawChars" 
+          (java s "toCharArray") 
+          0 (java s "length") (- (x-c p) (* 10 (min 2 (java s "length")))) (+ (y-c p) 10)))
+
+	; current position ;
+  (defn draw-cur-pos (p) cond (not (null? p)) (draw-cell (car p) (cadr p) cur-pos-color))
+
+	; background of the field ;
+  (defn draw-field-base (cur-p)
+    (java imageGraphics "clearRect" 0 0 (+ 1 (* max-c sq-size)) (+ 1 (* max-r sq-size)))
+    (ntimes (* max-r max-c) 
+            (lambda (x) (draw-cell (+ 1 (/ x max-c)) (+ 1 (mod x max-c)) cell-color) (+ 1 x)) 
+            0)
+    (draw-cur-pos cur-p))
+
+	; drawing a field with all objects ;
+  (defn show-real-field ()
+    (draw-field-base cur-pos)
+
+    (defn show-river (r) cond
+      (null? r) nil
+      (null? (cdr r)) (draw-center-oval (car r) (/ sq-size 5))
+      ((draw-center-line (car r) (cadr r)) (show-river (cdr r))))
+    (map show-river rivers)
+
+    (defn show-hole (h i)
+      (draw-center-string (car h)  (++ i))
+      (draw-center-string (cadr h) (++ i)))
+    (zipwith show-hole holes (list-from-to 1 holes-count))
+
+    (java window "revalidate")
+    (java window "repaint"))
+
+	; drawing an empty field ;
+  (defn show-blank-field ()
+    (draw-field-base start-pos)
+    (java window "revalidate")
+    (java window "repaint"))
+
+
+	; game logic ;
+  
+    ; obtaining the second well coordinate by the first ;
+  (defn co-hole (p hole)
+    (def a (car hole) b (cadr hole)) (cond (eq? p a) b (eq? p b) a p))
+
+    ; search for the transferred position in the list of objects (rivers or holes), returns the applied visitor ;
+  (defn get-by-p (p objects v)
+    (defn go (l i) cond (null? l) nil (elem p (car l)) (v i (car l)) (go (cdr l) (+ 1 i)))
+    (go objects 1))
+
+    ; move the player in the specified direction and redraw the field if necessary ;
+  (defn move (p-pred dir dr dc)
+    (def r (+ dr (car p-pred)) c (+ dc (cadr p-pred))
+      in-field (and (<= 1 r max-r) (<= 1 c max-c)) p (cons r c))
+    (def rr (get-by-p p rivers (lambda (oi river) cons (last river) "river")))
+    (def rh (get-by-p p holes  (lambda (oi hole) cons (co-hole p hole) (++ "hole " oi))))
+    (cond (not in-field)   (set-response dir "wall")
+          (not (null? rr)) ((set! cur-pos (car rr)) (set-response dir (cadr rr)))
+          (not (null? rh)) ((set! cur-pos (car rh)) (set-response dir (cadr rh)))
+          ((set! cur-pos p) (set-response dir "free")))
+    (cond show-field-flag (show-real-field)))
+
+    ; show main frame ;
+  
+  (java window "setTitle" "Labyrinth - v.0.1")
+  (java window "setLocationByPlatform" true)
+  (java window "setVisible" true)
+  (java window "setAlwaysOnTop" true)
+  (java window "pack")
+  "Labyrinth Game")
+
+(main)

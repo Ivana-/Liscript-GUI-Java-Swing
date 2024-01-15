@@ -1,7 +1,6 @@
 package ivana.liscript.core;
 
 import javax.tools.JavaCompiler;
-import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,12 +15,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+//import java.awt.*;
+//import java.awt.image.BufferedImage;
+//import sun.java2d.*;
+
 /**
  * Производит вычисление переданного объекта в переданном окружении
  * является набором статических полей и методов - экземпляры класса не создается,
  * все требуемые параметры передаются напрямую в методы
  */
 public class Eval {
+
+//    java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -cp Liscript-GUI-Java-Swing.jar ivana.liscript.gui.swing.Main
+//    java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -classpath /home/ivana/pet-projects/Java/Liscript-GUI-Java-Swing/out/production/gui:/home/ivana/pet-projects/Java/Liscript-GUI-Java-Swing/out/production/core ivana.liscript.gui.swing.Main
+
+//    public static BufferedImage image = new BufferedImage(10, 10, 1);
+//    public static SunGraphics2D sig = (SunGraphics2D) image.createGraphics();
+//    public static Graphics2D ig = image.createGraphics();
 
     /**
      * объект - пустой список, все списки заканчиваются им, чтобы не плодить их много
@@ -51,8 +61,8 @@ public class Eval {
         AR_ADD, AR_SUB, AR_MUL, AR_DIV, AR_MOD,
         AR_GR, AR_GR_EQ, AR_LOW, AR_LOW_EQ, AR_EQ, AR_NOT_EQ,
         ST_CONCAT,
-        EQUAL, DEF, SET, GET, CONS, CAR, CDR, QUOTE, COND, EVAL, EVAL_IN_CONTEXT,
-        TYPEOF, PRINT, READ, LAMBDA, MACRO, BEGIN, TRAY,
+        EQUAL, SYMBOL, DEF, SET, GET, CONS, CAR, CDR, QUOTE, COND, EVAL, EVAL_IN_CONTEXT,
+        TYPEOF, PRINT, READ, LAMBDA, MACRO, MACROEXPAND, BEGIN, TRACE,
         CLASS, JAVA, COMPILE
     }
 
@@ -78,6 +88,7 @@ public class Eval {
         keyWords.put("++", SpecialForm.ST_CONCAT);
 
         keyWords.put("eq?", SpecialForm.EQUAL);
+        keyWords.put("symbol", SpecialForm.SYMBOL);
         keyWords.put("def", SpecialForm.DEF);
         keyWords.put("set!", SpecialForm.SET);
         keyWords.put("get", SpecialForm.GET);
@@ -93,9 +104,10 @@ public class Eval {
         keyWords.put("read", SpecialForm.READ);
         keyWords.put("lambda", SpecialForm.LAMBDA);
         keyWords.put("macro", SpecialForm.MACRO);
+        keyWords.put("macroexpand", SpecialForm.MACROEXPAND);
 
         keyWords.put("begin", SpecialForm.BEGIN);
-        keyWords.put("tray", SpecialForm.TRAY);
+        keyWords.put("trace", SpecialForm.TRACE);
         keyWords.put("class", SpecialForm.CLASS);
         keyWords.put("java", SpecialForm.JAVA);
         keyWords.put("compile", SpecialForm.COMPILE);
@@ -239,7 +251,7 @@ public class Eval {
         /**
          * строка - имя символа
          */
-        public String name = "";
+        public String name;
 
         /**
          * Конструктор
@@ -248,12 +260,12 @@ public class Eval {
          */
         Symbol(String n) { this.name = n; }
 
-        /**
-         * проверяет, является ли символ пустым
-         *
-         * @return истина/ложь
-         */
-        //public boolean isEmpty() { return this.name.isEmpty(); }
+//        /**
+//         * проверяет, является ли символ пустым
+//         *
+//         * @return истина/ложь
+//         */
+//        public boolean isEmpty() { return this.name.isEmpty(); }
 
         /**
          * @return строковое представление текущего типа
@@ -317,7 +329,7 @@ public class Eval {
             sb.append(showVal(f.body));
             sb.append(")");
 
-        } else sb.append(p.toString());
+        } else sb.append(p);
 
         return sb.toString();
     }
@@ -343,6 +355,7 @@ public class Eval {
                     return a;
             }
         } else {
+//            long a = ina.longValue();
             int a = ina.intValue();
             int b = inb.intValue();
             switch (op) {
@@ -383,6 +396,8 @@ public class Eval {
                     return true;
             }
         } else {
+//            long a = ina.longValue();
+//            long b = inb.longValue();
             int a = ina.intValue();
             int b = inb.intValue();
             switch (op) {
@@ -409,10 +424,10 @@ public class Eval {
             return (Number) o;
         } catch (Throwable ex) {
             if (o instanceof Symbol)
-                throw new RuntimeException("не связанная переменная: " + o.toString());
+                throw new RuntimeException("не связанная переменная: " + o);
             else
                 throw new RuntimeException("ошибка преобразования в число: "
-                        + o.getClass().getSimpleName() + ": " + o.toString());
+                        + o.getClass().getSimpleName() + ": " + o);
         }
     }
 
@@ -424,7 +439,7 @@ public class Eval {
                 throw new RuntimeException("не связанная переменная: " + o.toString());
             else
                 throw new RuntimeException("ошибка преобразования в булевский тип: "
-                        + o.getClass().getSimpleName() + ": " + o.toString());
+                        + o.getClass().getSimpleName() + ": " + o);
         }
     }
 
@@ -539,6 +554,19 @@ public class Eval {
         return r;
     }
 
+    private static ConsList evalList(int d, InOutable io, Env env, ConsList l) {
+        if (l.isEmpty()) return emptyList;
+
+        ConsList r = new ConsList(null, null), t = r;
+        while (!l.isEmpty()) {
+            t.car = eval(d, true, io, env, l.car);
+            t.cdr = l.cdr.isEmpty() ? emptyList : new ConsList(null, null);
+            t = t.cdr;
+            l = l.cdr;
+        }
+        return r;
+    }
+
     private static Object macroexpand(HashMap<String, Object> map, Object o) {
         //macroexpand :: [(String, LispVal)] -> LispVal -> LispVal
         //macroexpand kv = go where
@@ -548,7 +576,7 @@ public class Eval {
 
         if (o instanceof Symbol) {
             String s = o.toString();
-            return map.containsKey(s) ? map.get(s) : o;
+            return map.getOrDefault(s, o);
         } else if (o instanceof ConsList) {
             ConsList p = (ConsList) o;
             return p.isEmpty() ? emptyList :
@@ -575,28 +603,32 @@ public class Eval {
             int d, InOutable io, Env env, ConsList pa, ConsList pv, boolean evalVals) {
 
         HashMap<String, Object> m = new HashMap<>();
-        while (!pa.isEmpty() && !pv.isEmpty()) {
-            if (pa.cdr.isEmpty() && !pv.cdr.isEmpty())
-                m.put(pa.car.toString(), evalVals ? evalCons(d, io, env, pv) : pv);
-            else
-                m.put(pa.car.toString(), evalVals ? eval(d, true, io, env, pv.car) : pv.car);
+        while (!pa.isEmpty()) {
+            String name = pa.car.toString();
+            if (pv.isEmpty())
+                m.put(name, emptyList);
+            else if (pa.cdr.isEmpty() && !pv.cdr.isEmpty())
+                m.put(name, evalVals ? evalList(d, io, env, pv) : pv);
+            else {
+                m.put(name, evalVals ? eval(d, true, io, env, pv.car) : pv.car);
+                pv = pv.cdr;
+            }
             pa = pa.cdr;
-            pv = pv.cdr;
         }
         return m;
     }
 
     private static Object ret(int d, InOutable io, Object o) {
         if (d >= 0) {
-            io.out(false, cntd(d) + Character.toString((char) 8594) + " ");
+            io.out(false, cntd(d) + (char) 8594 + " ");
             io.out(true, o.toString());
         }
         return o;
     }
 
-    private static void tray(int d, InOutable io, Object o) {
+    private static void trace(int d, InOutable io, Object o) {
         if (d < 0) return;
-        io.out(false, cntd(d) + Character.toString((char) 8592) + " ");
+        io.out(false, cntd(d) + (char) 8592 + " ");
         io.out(true, o.toString());
     }
 
@@ -631,120 +663,6 @@ public class Eval {
         }
     }
 
-    private static Class compileClassForCode_(String code) throws Exception {
-        // create the source
-        //File sourceFile   = new File("/temp/Hello.java");
-        File sourceFile = new File("Hello.java");
-        FileWriter writer = new FileWriter(sourceFile);
-/*
-        writer.write(
-                "public class Hello{ \n" +
-                        " public void doit() { \n" +
-                        "   System.out.println(\"Hello world\") ;\n" +
-                        " }\n" +
-                        "}"
-        );
-        (compile "public class Hello {public int doit() {return 33;}}")
-        */
-        writer.write("package com.company;\n" + code);
-        writer.close();
-
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        StandardJavaFileManager fileManager =
-                compiler.getStandardFileManager(null, null, null);
-
-//        fileManager.setLocation(StandardLocation.CLASS_OUTPUT,
-//                //Arrays.asList(new File("/temp")));
-
-        // Compile the file
-        boolean callRes = compiler.getTask(null,
-                fileManager,
-                null,
-                null,
-                null,
-                fileManager.getJavaFileObjectsFromFiles(Arrays.asList(sourceFile)))
-                .call();
-        fileManager.close();
-
-        // delete the source file
-        // sourceFile.deleteOnExit();
-
-        if (callRes) {
-            //System.out.println("Yipe");
-            // Create a new custom class loader, pointing to the directory that contains the compiled
-            // classes, this should point to the top of the package structure!
-            URLClassLoader classLoader =
-                    new URLClassLoader(new URL[]{new File("./").toURI().toURL()});
-            // Load the class from the classloader by name....
-            //Class<?> loadedClass = classLoader.loadClass("testcompile.HelloWorld");
-            Class<?> loadedClass = classLoader.loadClass("Hello");
-
-            /*
-            // Create a new instance...
-            Object obj = loadedClass.newInstance();
-            // Santity check
-            if (obj instanceof DoStuff) {
-                // Cast to the DoStuff interface
-                DoStuff stuffToDo = (DoStuff)obj;
-                // Run it baby
-                stuffToDo.doStuff();
-            }
-            */
-            return loadedClass;
-
-        } else throw new RuntimeException("Не смогли загрузить класс " + code);
-
-        //runIt();
-    }
-
-    private static Class compileClassForCode__(String code) throws Exception {
-
-        // create the source
-        //File sourceFile   = new File("/temp/Hello.java");
-//        File sourceFile = new File("Hello.java");
-//        FileWriter writer = new FileWriter(sourceFile);
-/*
-(def cls (compile "
-public class Hello {
-    public int doit() {return 33;}
-}
-"))
-(def cls-obj (java cls "new"))
-(java cls-obj "doit")
-
-        (compile "public class Hello {public int doit() {return 33;}}")
-        */
-//        writer.write("package com.company;\n" + code);
-//        writer.close();
-
-        File root = new File("/java"); // On Windows running on C:\, this is C:\java.
-        File sourceFile = new File(root, "test/Hello.java");
-        sourceFile.getParentFile().mkdirs();
-        FileWriter writer = new FileWriter(sourceFile);
-/*
-        (compile "public class Hello {public int doit() {return 33;}}")
-        */
-        writer.write("package test;\n" + code);
-        writer.close();
-
-
-// Compile source file.
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        compiler.run(null, null, null, sourceFile.getPath());
-
-// Load and instantiate compiled class.
-        URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{root.toURI().toURL()});
-        //Class<?> cls = Class.forName("test.Test", true, classLoader); // Should print "hello".
-        Class<?> cls = Class.forName("test.Hello", true, classLoader);
-        //Object instance = cls.newInstance(); // Should print "world".
-        //System.out.println(instance); // Should print "test.Test@hashcode".
-
-        // delete the source file
-        sourceFile.deleteOnExit();
-
-        return cls;
-    }
-
     private static Class compileClassForCode(String code) throws Exception {
         File root = new File("/java");
         File sourceFile = new File(root, "test/Hello.java");
@@ -763,17 +681,7 @@ public class Hello {
         return cls;
     }
 
-    private static Class compileClassForCode_____(String code) throws Exception {
-
-        File root = new File("/java"); // On Windows running on C:\, this is C:\java.
-
-// Load and instantiate compiled class.
-        URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{root.toURI().toURL()});
-        //Class<?> cls = Class.forName("test.Test", true, classLoader); // Should print "hello".
-        return Class.forName("test.Hello", true, classLoader);
-    }
-
-    private static HashMap<String, Method> methodsHash = new HashMap<>();
+    private static final HashMap<String, Method> methodsHash = new HashMap<>();
 
     private static Constructor constructorForParams(Class c, Class[] paramTypes)
             throws RuntimeException {
@@ -796,7 +704,7 @@ public class Hello {
                     ) continue;
             f1.add(cn);
         }
-        if (f1.size() == 0)
+        if (f1.isEmpty())
             throw new RuntimeException("У класса " + c.getName()
                     + " нет подходящего конструктора");
         else if (f1.size() == 1) {
@@ -812,7 +720,7 @@ public class Hello {
             if (!Arrays.equals(cn.getParameterTypes(), paramTypes)) continue;
             f2.add(cn);
         }
-        if (f2.size() == 0)
+        if (f2.isEmpty())
             throw new RuntimeException("У класса " + c.getName()
                     + " конструктор не подходит по типам параметров");
         else if (f2.size() == 1) {
@@ -843,7 +751,7 @@ public class Hello {
                     ) continue;
             f1.add(m);
         }
-        if (f1.size() == 0)
+        if (f1.isEmpty())
             throw new RuntimeException("У класса " + c.getName()
                     + " нет подходящего метода с именем " + name);
         else if (f1.size() == 1) {
@@ -930,18 +838,11 @@ public class Hello {
     public static Object eval(int sl, boolean strict, InOutable io, Env env, Object inobj) {
 
         int d = sl + (sl < 0 ? 0 : 1);
-        //tray(d, io, inobj);
-/*
-        if (1 == 2) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("commented recursive Eval.....");
+        //trace(d, io, inobj);
 
-        } else
-*/
         if (Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("вычисление прервано");
-            //return ret(d, io, emptyList);
 
         } else if (inobj == null) {
             Thread.currentThread().interrupt();
@@ -949,17 +850,11 @@ public class Hello {
             //return ret(d, io, emptyList);
 
         } else if (inobj instanceof Symbol) {
-            Object v = env.getVar(inobj.toString());
-            if (v.equals(inobj.toString()))
-                return v;
-            else {
-                tray(d, io, inobj);
-                return ret(d, io, v);
-            }
+            trace(d, io, inobj);
+            return ret(d, io, env.getVar((Symbol) inobj));
 
         } else if (inobj instanceof ConsList) {
-
-            tray(d, io, inobj);
+            trace(d, io, inobj);
 
             ConsList l = (ConsList) inobj;
             if (l.isEmpty()) return ret(d, io, l);
@@ -977,19 +872,7 @@ public class Hello {
                                 (String) ls.car :
                                 eval(d, true, io, env, ls.car).toString();
                         return ret(d, io, classForName(name));
-/*
-                    case NEW:
-                        try {
-                            Class cls = (Class) eval(d, true, io, env, ls.car);
-                            return ret(d, io, cls.newInstance());
-                            //} catch (InstantiationException e) {
-                            //    throw new RuntimeException(e.getMessage(), e);
-                            //} catch (IllegalAccessException e) {
-                            //    throw new RuntimeException(e.getMessage(), e);
-                        } catch (Throwable e) {
-                            throw new RuntimeException(e.getMessage(), e);
-                        }
-*/
+
                     case JAVA:
                         v = eval(d, true, io, env, ls.car);
                         name = (ls.cdr.car instanceof String) ?
@@ -1012,53 +895,7 @@ public class Hello {
                         } catch (Throwable e) {
                             throw new RuntimeException(e.getLocalizedMessage(), e);
                         }
-/*
-                    case METHOD:
-                        name = (ls.cdr.car instanceof String) ?
-                                (String) ls.cdr.car :
-                                eval(d, true, io, env, ls.cdr.car).toString();
-                        try {
-                            Class cls = (Class) eval(d, true, io, env, ls.car);
-                            int paramCnt = 0;
-                            ConsList p = ls.cdr.cdr;
-                            Class[] paramTypes = new Class[p.size()];
-                            while (!p.isEmpty()) {
-                                String n = (p.car instanceof String) ?
-                                        (String) p.car :
-                                        eval(d, true, io, env, p.car).toString();
-                                //paramTypes[paramCnt] = Class.forName(n);
-                                paramTypes[paramCnt] = classForName(n);
-                                paramCnt += 1;
-                                p = p.cdr;
-                            }
 
-                            //Class[] paramTypes = new Class[2];
-                            //paramTypes[0] = Component.class; // JFrame.class;
-                            //paramTypes[1] = Object.class; //String.class;
-                            //String methodName = name;
-                            //io.out(true, name);
-                            //io.out(true, v.getClass().toString());
-                            //JOptionPane.showMessageDialog(Main.application, "test param");
-                            //Instantiate an object of type method that returns you method name
-
-                            //    Method m = v.getClass().getDeclaredMethod(methodName, paramTypes);
-                            Method m = cls.getDeclaredMethod(name, paramTypes);
-
-                            //invoke method with actual params
-                            //Object r = m.invoke(v, Main.application, mess);
-                            //return ret(d, io, r==null ? rawStringOK : r);
-                            return ret(d, io, m);
-
-                            //} catch (NoSuchMethodException e) {
-                            //    throw new RuntimeException(e.getMessage(), e);
-                            //} catch (InvocationTargetException e) {
-                            //    throw new RuntimeException(e.getMessage(), e);
-                            //} catch (IllegalAccessException e) {
-                            //   throw new RuntimeException(e.getMessage(), e);
-                        } catch (Throwable e) {
-                            throw new RuntimeException(e.getMessage(), e);
-                        }
-*/
                     case AR_ADD:
                     case AR_SUB:
                     case AR_MUL:
@@ -1085,6 +922,10 @@ public class Hello {
                     case EQUAL:
                         return ret(d, io, foldEqObject(d, io, env, ls));
 
+                    case SYMBOL:
+                        v = eval(d, true, io, env, ls.car);
+                        return ret(d, io, new Symbol(v.toString()));
+
                     case DEF:
                         while (!ls.isEmpty() && !ls.cdr.isEmpty()) {
                             name = (ls.car instanceof Symbol) ?
@@ -1093,6 +934,10 @@ public class Hello {
                             env.defVar(name, eval(d, true, io, env, ls.cdr.car));
                             ls = ls.cdr.cdr;
                         }
+//                        name = (ls.car instanceof Symbol) ?
+//                                ls.car.toString() :
+//                                eval(d, true, io, env, ls.car).toString();
+//                        env.defVar(name, eval(d, true, io, env, ls.cdr.car));
                         return ret(d, io, stringOK);
 
                     case SET:
@@ -1109,7 +954,7 @@ public class Hello {
                         name = (ls.car instanceof Symbol) ?
                                 ls.car.toString() :
                                 eval(d, true, io, env, ls.car).toString();
-                        v = env.getVar(name);
+                        v = env.getVar(new Symbol(name));
                         //if (v.equals(ls.car))
                         //    return v;
                         //else
@@ -1135,7 +980,7 @@ public class Hello {
                     case QUOTE:
                         return ret(d, io, ls.car);
 
-                    case TRAY:
+                    case TRACE:
                         return ret(d, io, eval(0, strict, io, env, getbody(ls)));
 
                     case COND:
@@ -1164,18 +1009,7 @@ public class Hello {
                             throw new RuntimeException("eval-in - первый аргумент НЕ lambda");
 
                     case TYPEOF:
-                        //v = ls.car;
                         v = eval(d, true, io, env, ls.car);
-                        /*
-                        if (v instanceof String) v = eval(d, true, io, env, ls.car);
-                        switch (v.getClass().getSimpleName()) {
-                            case "RawString":
-                                return new RawString("String");
-                            case "String":
-                                return new RawString("Symbol");
-                            default:
-                                return new RawString(v.getClass().getSimpleName());}
-                                */
                         return v.getClass().getSimpleName();
 
                     case PRINT:
@@ -1198,7 +1032,16 @@ public class Hello {
                     case MACRO:
                         return ret(d, io, new Macr((ConsList) ls.car, getbody(ls.cdr)));
 
-                    //case "rec":
+                    case MACROEXPAND:
+                        v = eval(d, true, io, env, ls.car);
+                        if (v instanceof Macr) {
+                            Macr f = (Macr) v;
+                            Object me = macroexpand(getMapArgsVals(d, io, env, f.pars, ls.cdr, false), f.body);
+                            return ret(d, io, me);
+                        } else
+                            throw new Error("MACROEXPAND вызван не на макросе");
+
+                        //case "rec":
                     //    Func f = (Func) eval(d, true, io, env, ls.car);
                     //    return ret(d, io, new FuncCall(f,
                     //            getEvalMapArgsVals(io, env, f.pars, ls.cdr)));
@@ -1284,7 +1127,7 @@ public class Hello {
 
         } else if (inobj instanceof FuncCall) {
 
-            tray(d, io, inobj);
+            trace(d, io, inobj);
 
             Object v = inobj;
             while (v instanceof FuncCall) {
@@ -1471,7 +1314,7 @@ public class Hello {
 
                 case ST_CONCAT:
                     String rs = "";
-                    while (!ls.isEmpty()) rs = rs + ls.removeFirst().toString();
+                    while (!ls.isEmpty()) rs = rs + ls.removeFirst();
                     return rs;
 
                 case EQUAL: return foldEqObjectNoeval(ls);
@@ -1490,7 +1333,7 @@ public class Hello {
                     //}
                     return stringOK;
 
-                case GET: return env.getVar(ls.getFirst().toString());
+                case GET: return env.getVar((Symbol) ls.getFirst());
 
                 case CONS: return evalConsNoeval(ls);
 
@@ -1510,7 +1353,7 @@ public class Hello {
 
                 case QUOTE: return ls.getFirst();
 
-//                case TRAY: return ret(d, io, eval(0, strict, io, env, getbody(ls)));
+//                case TRACE: return ret(d, io, eval(0, strict, io, env, getbody(ls)));
 
                 case COND: return ls.isEmpty() ? stringOK : ls.getLast();
 /*
@@ -1572,7 +1415,7 @@ public class Hello {
                 case CAR:
                 case CDR:
                 case QUOTE:
-                case TRAY:
+                case TRACE:
                     return false;
 
                 case COND:
@@ -1609,7 +1452,7 @@ public class Hello {
         if (o instanceof ConsList)
             si.upd((ConsList) o);
         else {
-            Object r = o instanceof Symbol ? si.env.getVar(o.toString()) : o;
+            Object r = o instanceof Symbol ? si.env.getVar((Symbol) o) : o;
             si.l.clear();
             si.l.addLast(SpecialForm.BEGIN);
             si.l.addLast(r);
@@ -1622,7 +1465,7 @@ public class Hello {
             FileNotFoundException {
 
         //PrintWriter writer = new PrintWriter("StackLog.txt");
-        boolean log = false; //true;
+//        boolean log = false; //true;
         int maxstacksize = 0;
         //Main.maxstacksize = 0;
 
@@ -1630,7 +1473,7 @@ public class Hello {
             Thread.currentThread().interrupt();
             throw new Error("вычисление прервано: передан null");
 
-        } else if (inobj instanceof Symbol) return env.getVar(inobj.toString());
+        } else if (inobj instanceof Symbol) return env.getVar((Symbol) inobj);
 
         else if (inobj instanceof ConsList) {
 
@@ -1750,7 +1593,7 @@ public class Hello {
                                     si.p = emptyList;
                                     break;
 
-//                                case TRAY:
+//                                case TRACE:
 //                                    break;
 
                                 case COND:
@@ -1820,7 +1663,7 @@ public class Hello {
                         break;
 
                     } else if (si.p.car instanceof Symbol) {
-                        si.l.addLast(si.env.getVar(si.p.car.toString()));
+                        si.l.addLast(si.env.getVar((Symbol) si.p.car));
                         si.p = si.p.cdr;
 
                     } else if (si.p.car instanceof ConsList) {
@@ -1832,8 +1675,7 @@ public class Hello {
                             si = new StackItem(si.env, (ConsList) si.p.car);
                             stack.addFirst(si);
 
-                            maxstacksize =
-                                    stack.size() > maxstacksize ? stack.size() : maxstacksize;
+                            maxstacksize = Math.max(stack.size(), maxstacksize);
                             //if (log) writer.println("" + stack.size());
                         }
                     } else {
@@ -1863,7 +1705,7 @@ public class Hello {
 
                     //if (log) writer.println("" + stack.size());
 
-                    if (stack.size() > 0) {
+                    if (!stack.isEmpty()) {
                         si = stack.getFirst();
                         si.l.addLast(r);
                         si.p = si.p.cdr;
